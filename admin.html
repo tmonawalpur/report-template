@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>एडमिन प्यानल — समीक्षा प्रतिवेदन</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1b1b52; --navy2:#2b2b74; --green:#1e5b45; --green2:#22795b;
+  --red:#b01e39; --ink:#16162e; --muted:#5b5b74; --line:#dcdce8;
+  --bg:#eef0f6; --paper:#ffffff; --amber:#f7b32b;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Mukta","Noto Sans Devanagari",system-ui,Arial,sans-serif;
+  background:var(--bg); color:var(--ink); font-size:15px}
+
+/* ---- top bar ---- */
+.topbar{position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:12px;
+  padding:12px 22px; background:linear-gradient(90deg,#141430,#2b2b74); color:#fff;
+  box-shadow:0 2px 16px rgba(0,0,0,.2)}
+.topbar h1{font-size:18px; margin:0; font-weight:800; letter-spacing:.3px}
+.topbar h1 small{opacity:.7; font-weight:500; font-size:13px}
+.topbar .sp{flex:1}
+.pill{font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;
+  background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.16)}
+.pill.on{background:rgba(58,210,159,.18); color:#3ad29f; border-color:rgba(58,210,159,.4)}
+.pill.off{background:rgba(247,179,43,.18); color:#f7b32b; border-color:rgba(247,179,43,.4)}
+
+.wrap{max-width:1080px; margin:22px auto; padding:0 18px 80px}
+.card{background:var(--paper); border:1px solid var(--line); border-radius:14px;
+  box-shadow:0 8px 26px rgba(20,20,60,.06); margin-bottom:22px; overflow:hidden}
+.card > h2{margin:0; padding:14px 20px; font-size:16px; background:#f6f7fc;
+  border-bottom:1px solid var(--line); color:var(--navy); display:flex; align-items:center; gap:8px}
+.card > h2 .count{font-size:12px; color:var(--muted); font-weight:600}
+.card .body{padding:18px 20px}
+
+/* ---- buttons ---- */
+.btn{border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer;
+  padding:8px 13px; border-radius:9px; font:inherit; font-weight:600; font-size:13.5px;
+  display:inline-flex; align-items:center; gap:6px; transition:.13s; text-decoration:none}
+.btn:hover{background:#f2f3fa; border-color:#c4c6d8}
+.btn.primary{background:var(--navy); color:#fff; border-color:var(--navy)}
+.btn.primary:hover{background:var(--navy2)}
+.btn.green{background:#22795b; color:#fff; border-color:#22795b}
+.btn.green:hover{background:#1e6a50}
+.btn.danger{background:#fff; color:var(--red); border-color:#e6bcc6}
+.btn.danger:hover{background:#fdecef}
+.btn.sm{padding:5px 9px; font-size:12.5px; border-radius:7px}
+.btn.icon{padding:5px 8px}
+.btn:disabled{opacity:.4; cursor:not-allowed}
+
+/* ---- forms ---- */
+.grid{display:grid; grid-template-columns:1fr 1fr; gap:14px 18px}
+.grid.one{grid-template-columns:1fr}
+.field{display:flex; flex-direction:column; gap:5px}
+.field label{font-size:12.5px; font-weight:700; color:var(--muted)}
+.field input[type=text], .field textarea, .field select, .inp{
+  width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+  font:inherit; font-size:14px; background:#fff}
+.field textarea{resize:vertical; min-height:70px; line-height:1.5}
+.inp:focus, .field input:focus, .field textarea:focus, .field select:focus{
+  outline:2px solid rgba(43,43,116,.35); outline-offset:0; border-color:var(--navy2)}
+.row-actions{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap}
+.check{display:inline-flex; align-items:center; gap:7px; font-weight:600; font-size:13.5px; cursor:pointer}
+.check input{width:17px; height:17px}
+.hint{font-size:12px; color:var(--muted)}
+
+/* ---- slide list table ---- */
+table.list{width:100%; border-collapse:collapse}
+table.list th, table.list td{padding:9px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle}
+table.list th{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px}
+table.list tr:hover td{background:#f8f9fd}
+.tag{display:inline-block; font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:20px;
+  background:#eaecf7; color:var(--navy)}
+.tag.title{background:#e7edff;color:#2f52b0} .tag.intro{background:#eafaf1;color:#1e7a52}
+.tag.list{background:#fff2e0;color:#a76a12} .tag.table{background:#fdeaef;color:#a4213c}
+.tag.twotable{background:#fdeaef;color:#a4213c} .tag.chart{background:#e9f6fb;color:#1c6d86}
+.tag.thanks{background:#f0eafd;color:#6b34b8}
+.num{color:var(--muted); font-weight:700; width:34px}
+.mini{font-size:12px; color:var(--muted)}
+.acts{display:flex; gap:5px; justify-content:flex-end}
+td.actcol{width:1%; white-space:nowrap}
+.addbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px;
+  padding:12px 14px; background:#f6f7fc; border:1px dashed var(--line); border-radius:10px}
+
+/* ---- sub tables (rows / chart data) ---- */
+.subtbl{border-collapse:collapse; width:100%; font-size:13px; margin-top:6px}
+.subtbl th,.subtbl td{border:1px solid var(--line); padding:3px}
+.subtbl th{background:#f4f6fb; font-weight:700; color:var(--navy); font-size:12px; padding:5px}
+.subtbl .inp{padding:5px 6px; font-size:13px; border-radius:5px; min-width:70px}
+.subtbl td.rn{background:#f4f6fb; color:var(--muted); font-weight:700; text-align:center; width:28px}
+.editor-block{margin-top:18px; padding-top:16px; border-top:1px solid var(--line)}
+.editor-block > h4{margin:0 0 10px; font-size:14px; color:var(--navy); display:flex; align-items:center; gap:8px}
+.item-row{display:flex; gap:8px; align-items:flex-start; margin-bottom:8px}
+.item-row .inp{flex:1}
+.item-row .btn{flex:0 0 auto}
+
+/* ---- modal ---- */
+.overlay{position:fixed; inset:0; background:rgba(18,18,40,.55); z-index:40; display:none;
+  align-items:flex-start; justify-content:center; overflow:auto; padding:34px 16px}
+.overlay.show{display:flex}
+.modal{background:var(--paper); width:min(880px,100%); border-radius:16px; overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.modal header{display:flex; align-items:center; gap:10px; padding:15px 20px;
+  background:var(--navy); color:#fff}
+.modal header h3{margin:0; font-size:16px; font-weight:800}
+.modal header .sp{flex:1}
+.modal .mbody{padding:20px; max-height:calc(100vh - 190px); overflow:auto}
+.modal footer{display:flex; gap:10px; justify-content:flex-end; padding:14px 20px;
+  border-top:1px solid var(--line); background:#f6f7fc; position:sticky; bottom:0}
+
+/* ---- toast ---- */
+#toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+  background:var(--navy); color:#fff; padding:11px 20px; border-radius:11px; z-index:60;
+  font-size:14px; font-weight:600; opacity:0; transition:.25s; pointer-events:none; box-shadow:0 10px 30px rgba(0,0,0,.3)}
+#toast.show{opacity:1}
+#toast.err{background:var(--red)}
+.loading{padding:60px; text-align:center; color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🗄 एडमिन प्यानल <small>· समीक्षा प्रतिवेदन डाटा</small></h1>
+  <span class="pill" id="modePill">…</span>
+  <div class="sp"></div>
+  <a class="btn" href="/" title="प्रस्तुति खोल्नुहोस्">▶ प्रस्तुति</a>
+</div>
+
+<div class="wrap" id="app">
+  <div class="loading">लोड हुँदैछ…</div>
+</div>
+
+<!-- Slide editor modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <header>
+      <h3 id="mTitle">स्लाइड सम्पादन</h3>
+      <div class="sp"></div>
+      <button class="btn sm" id="mClose" style="background:rgba(255,255,255,.14);color:#fff;border-color:transparent">✕ बन्द</button>
+    </header>
+    <div class="mbody" id="mBody"></div>
+    <footer>
+      <button class="btn" id="mCancel">रद्द</button>
+      <button class="btn green" id="mSave">💾 सेभ गर्नुहोस्</button>
+    </footer>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   Admin panel — form/table editor over the same REST API the
+   presentation uses (Flask + SQLite).
+   ============================================================ */
+const META_FIELDS = [
+  ['province','प्रदेश'],['ministry','मन्त्रालय'],['office','कार्यालय (छोटो)'],
+  ['officeFull','कार्यालय (पूरा)'],['fy','आर्थिक वर्ष'],['reportTitle','प्रतिवेदन शीर्षक']
+];
+const TYPE_LABELS = {title:'शीर्षक',intro:'परिचय',list:'सूची',table:'तालिका',
+  twotable:'दुई तालिका',chart:'चार्ट',thanks:'धन्यवाद'};
+const CHART_TYPES = [['bar','बार'],['line','रेखा'],['area','क्षेत्र'],
+  ['radar','रडार'],['doughnut','डोनट'],['pie','पाई'],['polarArea','पोलर']];
+const SKELETONS = {
+  intro:   ()=>({type:'intro', title:'नयाँ परिचय', paras:['यहाँ विवरण लेख्नुहोस्।'], photoText:''}),
+  list:    ()=>({type:'list', title:'नयाँ सूची', cols:1, big:true, items:['नयाँ बुँदा']}),
+  table:   ()=>({type:'table', title:'नयाँ तालिका', head:[[{t:'शीर्षक'},{t:'मान'}]], rows:[['',''],['','']]}),
+  twotable:()=>({type:'twotable', title:'नयाँ दुई तालिका', tables:[
+      {head:[[{t:'क'},{t:'ख'}]], rows:[['','']]},
+      {head:[[{t:'क'},{t:'ख'}]], rows:[['','']]}]}),
+  chart:   ()=>({type:'chart', title:'नयाँ चार्ट', chart:{type:'bar', labels:['क','ख','ग'],
+      datasets:[{label:'शृंखला १', data:[0,0,0]}]}}),
+  thanks:  ()=>({type:'thanks', text:'धन्यवाद !'})
+};
+
+let DECK = {meta:{}, slides:[]};
+let SERVER = true;
+let workIndex = -1;   // slide index being edited
+let work = null;      // working copy of that slide
+
+const $ = s => document.querySelector(s);
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function coerceNum(v){ const t=String(v).trim(); if(t!=='' && !isNaN(t.replace(/,/g,''))) return parseFloat(t.replace(/,/g,'')); return v; }
+
+async function api(method,url,body){
+  const r = await fetch(url,{method,
+    headers: body!==undefined?{'Content-Type':'application/json'}:undefined,
+    body: body!==undefined?JSON.stringify(body):undefined});
+  if(!r.ok) throw new Error(method+' '+url+' → '+r.status);
+  return r.status===204?null:r.json();
+}
+let toastT; function toast(msg,err){ const t=$('#toast'); t.textContent=msg; t.className='show'+(err?' err':'');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.className='',2400); }
+
+async function boot(){
+  try{ DECK = await api('GET','/api/deck'); SERVER=true; }
+  catch(e){ SERVER=false; }
+  const p=$('#modePill');
+  if(SERVER){ p.textContent='● डाटाबेस जडित'; p.className='pill on'; }
+  else{ p.textContent='○ सर्भर जडान भएन'; p.className='pill off'; }
+  renderApp();
+}
+
+/* ---------------- top-level render ---------------- */
+function renderApp(){
+  if(!SERVER){
+    $('#app').innerHTML = `<div class="card"><div class="body">
+      <p><b>सर्भरसँग जडान हुन सकेन।</b></p>
+      <p class="hint">एडमिन प्यानल चलाउन Flask सर्भर चालु हुनुपर्छ: <code>python app.py</code> चलाएर
+      <code>http://127.0.0.1:5000/admin</code> खोल्नुहोस्।</p></div></div>`;
+    return;
+  }
+  $('#app').innerHTML = metaCardHTML() + slidesCardHTML();
+  wireMeta();
+  wireSlides();
+}
+
+/* ---------------- META ---------------- */
+function metaCardHTML(){
+  const m=DECK.meta||{};
+  const fields = META_FIELDS.map(([k,lbl])=>`
+    <div class="field">
+      <label>${lbl}</label>
+      <input type="text" class="inp" data-meta="${k}" value="${esc(m[k]||'')}">
+    </div>`).join('');
+  return `<div class="card">
+    <h2>📋 प्रतिवेदन विवरण <span class="count">(हेडर/मेटाडाटा)</span></h2>
+    <div class="body">
+      <div class="grid">${fields}</div>
+      <div class="row-actions"><button class="btn green" id="saveMeta">💾 विवरण सेभ गर्नुहोस्</button></div>
+    </div>
+  </div>`;
+}
+function wireMeta(){
+  $('#saveMeta').onclick = async ()=>{
+    $('#app').querySelectorAll('[data-meta]').forEach(i=> DECK.meta[i.dataset.meta]=i.value);
+    try{ await api('PUT','/api/meta',DECK.meta); toast('✔ विवरण सेभ भयो'); }
+    catch(e){ toast('⚠ सेभ हुन सकेन',1); }
+  };
+}
+
+/* ---------------- SLIDES LIST ---------------- */
+function slideSummary(s){
+  switch(s.type){
+    case 'list': return (s.items||[]).length+' बुँदा';
+    case 'intro': return (s.paras||[]).length+' अनुच्छेद';
+    case 'table': return (s.rows||[]).length+' पंक्ति'+(s.chart?' · चार्ट':'');
+    case 'twotable': return (s.tables||[]).length+' तालिका';
+    case 'chart': return (s.chart?.datasets||[]).length+' शृंखला · '+(s.chart?.type||'');
+    case 'thanks': return esc(s.text||'');
+    case 'title': return 'शीर्षक स्लाइड';
+    default: return '';
+  }
+}
+function slidesCardHTML(){
+  const rows = DECK.slides.map((s,i)=>`
+    <tr data-i="${i}">
+      <td class="num">${i+1}</td>
+      <td><span class="tag ${s.type}">${TYPE_LABELS[s.type]||s.type}</span></td>
+      <td>${esc(s.title|| (s.type==='thanks'? s.text : s.type==='title'? '(शीर्षक स्लाइडले मेटाडाटा प्रयोग गर्छ)':'—'))}</td>
+      <td class="mini">${slideSummary(s)}</td>
+      <td class="actcol"><div class="acts">
+        <button class="btn sm icon" data-act="up" title="माथि" ${i===0?'disabled':''}>▲</button>
+        <button class="btn sm icon" data-act="down" title="तल" ${i===DECK.slides.length-1?'disabled':''}>▼</button>
+        <button class="btn sm" data-act="edit">✎ सम्पादन</button>
+        <button class="btn sm icon" data-act="dup" title="कपी">⧉</button>
+        <button class="btn sm icon danger" data-act="del" title="हटाउनुहोस्">🗑</button>
+      </div></td>
+    </tr>`).join('');
+  const typeOpts = Object.entries(SKELETONS).map(([k])=>`<option value="${k}">${TYPE_LABELS[k]}</option>`).join('');
+  return `<div class="card">
+    <h2>🗂 स्लाइडहरू <span class="count">(${DECK.slides.length} वटा)</span></h2>
+    <div class="body">
+      <div class="addbar">
+        <b>नयाँ स्लाइड थप्नुहोस्:</b>
+        <select class="inp" id="newType" style="width:auto">${typeOpts}</select>
+        <button class="btn primary" id="addSlide">＋ थप्नुहोस्</button>
+        <span class="hint">अन्त्यमा थपिन्छ — त्यसपछि क्रम मिलाउन ▲▼ प्रयोग गर्नुहोस्।</span>
+      </div>
+      <table class="list">
+        <thead><tr><th>#</th><th>प्रकार</th><th>शीर्षक</th><th>सारांश</th><th style="text-align:right">कार्य</th></tr></thead>
+        <tbody id="slideRows">${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+function wireSlides(){
+  $('#addSlide').onclick = async ()=>{
+    const type = $('#newType').value;
+    const slide = SKELETONS[type]();
+    const afterId = DECK.slides.length ? DECK.slides[DECK.slides.length-1]._id : null;
+    try{ await api('POST','/api/slides',{after:afterId, slide}); await reload(); toast('✔ स्लाइड थपियो'); }
+    catch(e){ toast('⚠ थप्न सकिएन',1); }
+  };
+  $('#slideRows').addEventListener('click', async e=>{
+    const btn=e.target.closest('[data-act]'); if(!btn) return;
+    const i=+btn.closest('tr').dataset.i; const act=btn.dataset.act; const s=DECK.slides[i];
+    if(act==='edit') return openEditor(i);
+    if(act==='del'){
+      if(DECK.slides.length<=1) return toast('कम्तिमा एक स्लाइड चाहिन्छ',1);
+      if(!confirm('यो स्लाइड हटाउने?')) return;
+      try{ await api('DELETE','/api/slides/'+s._id); await reload(); toast('स्लाइड हटाइयो'); }catch(e){ toast('⚠ हट्न सकेन',1); }
+    } else if(act==='dup'){
+      try{ await api('POST','/api/slides/'+s._id+'/duplicate'); await reload(); toast('✔ कपी भयो'); }catch(e){ toast('⚠ कपी हुन सकेन',1); }
+    } else if(act==='up' || act==='down'){
+      const j = act==='up'? i-1 : i+1; if(j<0||j>=DECK.slides.length) return;
+      [DECK.slides[i],DECK.slides[j]]=[DECK.slides[j],DECK.slides[i]];
+      try{ await api('POST','/api/slides/reorder',{order:DECK.slides.map(x=>x._id)}); await reload(); }
+      catch(e){ toast('⚠ क्रम मिलेन',1); }
+    }
+  });
+}
+async function reload(){ DECK = await api('GET','/api/deck'); renderApp(); }
+
+/* ---------------- SLIDE EDITOR (modal) ---------------- */
+function openEditor(i){
+  workIndex=i; work=structuredClone(DECK.slides[i]);
+  $('#mTitle').textContent = 'सम्पादन: '+(TYPE_LABELS[work.type]||work.type)+' (#'+(i+1)+')';
+  renderEditor();
+  $('#overlay').classList.add('show');
+}
+function closeEditor(){ $('#overlay').classList.remove('show'); work=null; workIndex=-1; }
+
+function renderEditor(){ $('#mBody').innerHTML = editorHTML(work); }
+
+function fieldText(label,path,val){ return `<div class="field"><label>${label}</label>
+  <input type="text" class="inp" data-f="${path}" value="${esc(val||'')}"></div>`; }
+function fieldArea(label,path,val){ return `<div class="field"><label>${label}</label>
+  <textarea class="inp" data-f="${path}">${esc(val||'')}</textarea></div>`; }
+
+function editorHTML(w){
+  switch(w.type){
+    case 'title':  return `<p class="hint">शीर्षक स्लाइडले माथिको <b>प्रतिवेदन विवरण</b> (मेटाडाटा) देखाउँछ। त्यहीँ सम्पादन गर्नुहोस्।</p>`;
+    case 'thanks': return `<div class="grid one">${fieldText('धन्यवाद पाठ','text',w.text)}</div>`;
+    case 'intro':  return introEditor(w);
+    case 'list':   return listEditor(w);
+    case 'table':  return tableEditor(w,'');
+    case 'twotable': return twoTableEditor(w);
+    case 'chart':  return `<div class="grid"><div class="field"><label>शीर्षक</label>
+        <input type="text" class="inp" data-f="title" value="${esc(w.title||'')}"></div></div>`+chartEditor(w.chart,'chart.');
+    default: return '<p>अज्ञात प्रकार</p>';
+  }
+}
+
+function introEditor(w){
+  const paras=(w.paras||[]).map((p,i)=>`<div class="item-row">
+    <textarea class="inp" data-f="paras.${i}">${esc(p)}</textarea>
+    <button class="btn sm danger" data-act="delpara" data-i="${i}">✕</button></div>`).join('');
+  return `<div class="grid">${fieldText('शीर्षक','title',w.title)}${fieldText('फोटो क्याप्सन','photoText',w.photoText)}</div>
+    <div class="editor-block"><h4>अनुच्छेदहरू</h4>${paras}
+      <button class="btn sm" data-act="addpara">＋ अनुच्छेद</button></div>`;
+}
+
+function listEditor(w){
+  const items=(w.items||[]).map((t,i)=>`<div class="item-row">
+    <input type="text" class="inp" data-f="items.${i}" value="${esc(t)}">
+    <button class="btn sm icon" data-act="itemup" data-i="${i}" ${i===0?'disabled':''}>▲</button>
+    <button class="btn sm icon" data-act="itemdown" data-i="${i}" ${i===w.items.length-1?'disabled':''}>▼</button>
+    <button class="btn sm danger" data-act="delitem" data-i="${i}">✕</button></div>`).join('');
+  return `<div class="grid">
+      ${fieldText('शीर्षक','title',w.title)}
+      <div class="field"><label>स्तम्भ</label>
+        <select class="inp" data-f="cols"><option value="1"${w.cols!=2?' selected':''}>१ स्तम्भ</option><option value="2"${w.cols==2?' selected':''}>२ स्तम्भ</option></select></div>
+      <label class="check"><input type="checkbox" data-f="big" ${w.big?'checked':''}> ठूलो फन्ट</label>
+      <div class="field"><label>सुरु नम्बर (startNo)</label><input type="text" class="inp" data-f="startNo" value="${esc(w.startNo||'')}" placeholder="१"></div>
+    </div>
+    <div class="editor-block"><h4>बुँदाहरू (${(w.items||[]).length})</h4>${items}
+      <button class="btn sm" data-act="additem">＋ बुँदा</button></div>`;
+}
+
+function tableEditor(w, prefix){
+  const t = prefix ? getPath(w,prefix.slice(0,-1)) : w;
+  const showTitle = !prefix;   // twotable sub-tables have no title/caption of their own
+  const meta = showTitle ? `<div class="grid">
+      ${fieldText('शीर्षक','title',w.title)}
+      ${fieldText('क्याप्सन (वैकल्पिक)','caption',w.caption)}
+      <label class="check"><input type="checkbox" data-f="compact" ${w.compact?'checked':''}> सानो (compact)</label>
+      <label class="check"><input type="checkbox" data-f="totalRow" ${w.totalRow?'checked':''}> अन्तिम पंक्ति जम्मा</label>
+    </div>` : '';
+  return meta + gridEditor(t, prefix) +
+    (showTitle ? chartToggle(w) : '');
+}
+
+/* header + body grid editor for a table object at `prefix` (e.g. '' or 'tables.0.') */
+function gridEditor(t, prefix){
+  const headRows = t.head||[[]];
+  const single = headRows.length===1;
+  const ncol = Math.max(...headRows.map(r=>r.length), ...(t.rows||[]).map(r=>r.length), 1);
+  let head='';
+  headRows.forEach((hr,ri)=>{
+    head += '<tr><td class="rn">H'+(ri+1)+'</td>'+hr.map((c,ci)=>
+      `<td><input class="inp" data-h="${prefix}${ri}.${ci}" value="${esc(c&&c.t||'')}"></td>`).join('')+'</tr>';
+  });
+  let body='';
+  (t.rows||[]).forEach((r,ri)=>{
+    body += '<tr><td class="rn">'+(ri+1)+'</td>'+r.map((v,ci)=>
+      `<td><input class="inp" data-c="${prefix}${ri}.${ci}" value="${esc(v)}"></td>`).join('')+
+      `<td class="rn"><button class="btn sm danger icon" data-act="delrow" data-prefix="${prefix}" data-i="${ri}">✕</button></td></tr>`;
+  });
+  const colhdr = Array.from({length:ncol},(_,c)=>`<th>स्तम्भ ${c+1}</th>`).join('');
+  return `<div class="editor-block"><h4>तालिका डाटा
+      <span class="hint">(${(t.rows||[]).length} पंक्ति × ${ncol} स्तम्भ)</span></h4>
+    <table class="subtbl"><thead><tr><th></th>${colhdr}<th></th></tr></thead>
+      <tbody>${head}${body}</tbody></table>
+    <div class="row-actions">
+      <button class="btn sm" data-act="addrow" data-prefix="${prefix}">＋ पंक्ति</button>
+      <button class="btn sm" data-act="addcol" data-prefix="${prefix}" ${single?'':'disabled title=\"बहु-हेडर तालिकामा स्तम्भ थप्न मिल्दैन\"'}>＋ स्तम्भ</button>
+      <button class="btn sm danger" data-act="delcol" data-prefix="${prefix}" ${single&&ncol>1?'':'disabled'}>－ स्तम्भ</button>
+    </div>
+    ${single?'':'<p class="hint">यो तालिकामा बहु-हेडर पंक्ति भएकाले स्तम्भ थप/घट अक्षम छ; पाठ र पंक्ति सम्पादन गर्न सकिन्छ।</p>'}
+  </div>`;
+}
+
+function twoTableEditor(w){
+  const blocks=(w.tables||[]).map((t,ti)=>`<div class="editor-block"><h4>तालिका ${ti+1}</h4>
+    ${gridEditor(t,'tables.'+ti+'.')}</div>`).join('');
+  return `<div class="grid">${fieldText('शीर्षक','title',w.title)}</div>${blocks}`;
+}
+
+/* chart section for table slides: optional */
+function chartToggle(w){
+  if(!w.chart) return `<div class="editor-block"><h4>चार्ट</h4>
+    <p class="hint">यो तालिकामा चार्ट छैन।</p>
+    <button class="btn sm" data-act="addchart">＋ चार्ट थप्नुहोस्</button></div>`;
+  return `<div class="editor-block"><h4>चार्ट <button class="btn sm danger" data-act="delchart" style="margin-left:auto">चार्ट हटाउनुहोस्</button></h4>
+    ${chartInner(w.chart,'chart.')}</div>`;
+}
+
+function chartEditor(c,prefix){ return `<div class="editor-block"><h4>चार्ट सेटिङ</h4>${chartInner(c,prefix)}</div>`; }
+
+function chartInner(c,prefix){
+  const typeOpts=CHART_TYPES.map(([v,l])=>`<option value="${v}"${(c.type||'bar')===v?' selected':''}>${l}</option>`).join('');
+  const labels=(c.labels||[]);
+  // datasets grid: rows = datasets, cols = labels
+  let head='<tr><td class="rn"></td>'+labels.map((l,li)=>
+    `<td><input class="inp" data-cl="${prefix}${li}" value="${esc(l)}" title="लेबल"></td>`).join('')+'<td class="rn"></td></tr>';
+  let body='';
+  (c.datasets||[]).forEach((ds,di)=>{
+    body+='<tr><td><input class="inp" data-dl="'+prefix+di+'" value="'+esc(ds.label||'')+'" title="शृंखला नाम" style="min-width:120px"></td>'+
+      labels.map((_,li)=>`<td><input class="inp" data-cv="${prefix}${di}.${li}" value="${esc((ds.data||[])[li]??'')}"></td>`).join('')+
+      `<td class="rn"><button class="btn sm danger icon" data-act="deldataset" data-prefix="${prefix}" data-i="${di}">✕</button></td></tr>`;
+  });
+  return `<div class="grid">
+      <div class="field"><label>प्रकार</label><select class="inp" data-f="${prefix}type">${typeOpts}</select></div>
+      ${fieldText('उपशीर्षक (sub)',prefix+'sub',c.sub)}
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(4,auto);justify-content:start;gap:8px 18px;margin-top:8px">
+      <label class="check"><input type="checkbox" data-f="${prefix}stacked" ${c.stacked?'checked':''}> स्ट्याक्ड</label>
+      <label class="check"><input type="checkbox" data-f="${prefix}horizontal" ${c.horizontal?'checked':''}> तेर्सो</label>
+      <label class="check"><input type="checkbox" data-f="${prefix}datalabels" ${c.datalabels?'checked':''}> मान लेबल</label>
+      <label class="check"><input type="checkbox" data-f="${prefix}dualAxis" ${c.dualAxis?'checked':''}> दुई अक्ष</label>
+    </div>
+    <table class="subtbl" style="margin-top:12px"><thead><tr><th>शृंखला \\ लेबल</th>${labels.map((_,i)=>'<th>'+(i+1)+'</th>').join('')}<th></th></tr></thead>
+      <tbody>${head}${body}</tbody></table>
+    <div class="row-actions">
+      <button class="btn sm" data-act="addlabel" data-prefix="${prefix}">＋ लेबल/स्तम्भ</button>
+      <button class="btn sm danger" data-act="dellabel" data-prefix="${prefix}" ${labels.length>1?'':'disabled'}>－ लेबल</button>
+      <button class="btn sm" data-act="adddataset" data-prefix="${prefix}">＋ शृंखला</button>
+    </div>`;
+}
+
+/* ---- path helpers on the working object ---- */
+function getPath(o,p){ if(!p) return o; return p.split('.').reduce((a,k)=> a==null?a:a[k], o); }
+function setPath(o,p,v){ const ks=p.split('.'); let x=o; for(let i=0;i<ks.length-1;i++){ if(x[ks[i]]==null) x[ks[i]]=(/^\d+$/.test(ks[i+1])?[]:{}); x=x[ks[i]]; } x[ks[ks.length-1]]=v; }
+
+/* live-bind inputs in modal to `work` */
+$('#mBody').addEventListener('input', e=>{
+  const el=e.target;
+  if(el.dataset.f!==undefined){
+    let v = el.type==='checkbox'? el.checked : el.value;
+    if(el.dataset.f.endsWith('cols')||el.dataset.f.endsWith('startNo')) v = el.value===''? undefined : coerceNum(el.value);
+    setPath(work, el.dataset.f, v);
+  } else if(el.dataset.h!==undefined){
+    const [ri,ci]=lastTwo(el.dataset.h); const pfx=el.dataset.h.replace(/\d+\.\d+$/,'');
+    const t=getPath(work, pfx? pfx.slice(0,-1):'') || work;
+    t.head[ri][ci] = Object.assign({}, t.head[ri][ci], {t:el.value});
+  } else if(el.dataset.c!==undefined){
+    const {t,ri,ci}=cellRef(el.dataset.c); t.rows[ri][ci]=coerceNum(el.value);
+  } else if(el.dataset.cl!==undefined){
+    const {c,idx}=chartRef(el.dataset.cl); c.labels[idx]=el.value;
+  } else if(el.dataset.dl!==undefined){
+    const {c,idx}=chartRef(el.dataset.dl); c.datasets[idx].label=el.value;
+  } else if(el.dataset.cv!==undefined){
+    const m=el.dataset.cv.match(/(.*?)(\d+)\.(\d+)$/); const c=getPath(work,m[1].slice(0,-1))||work.chart;
+    c.datasets[+m[2]].data[+m[3]] = coerceNum(el.value);
+  }
+});
+function lastTwo(s){ const m=s.match(/(\d+)\.(\d+)$/); return [+m[1],+m[2]]; }
+function cellRef(s){ const m=s.match(/(.*?)(\d+)\.(\d+)$/); const t=getPath(work, m[1]? m[1].slice(0,-1):'')||work; return {t, ri:+m[2], ci:+m[3]}; }
+function chartRef(s){ const m=s.match(/(.*?)(\d+)$/); const c=getPath(work, m[1].slice(0,-1))||work.chart; return {c, idx:+m[2]}; }
+
+/* structural actions inside modal */
+$('#mBody').addEventListener('click', e=>{
+  const b=e.target.closest('[data-act]'); if(!b) return;
+  const act=b.dataset.act, i=+b.dataset.i, pfx=b.dataset.prefix||'';
+  const tableAt = ()=> getPath(work, pfx? pfx.slice(0,-1):'') || work;
+  const chartAt = ()=> getPath(work, pfx? pfx.slice(0,-1):'') || work.chart;
+  if(act==='additem'){ (work.items=work.items||[]).push(''); }
+  else if(act==='delitem'){ work.items.splice(i,1); }
+  else if(act==='itemup'){ [work.items[i-1],work.items[i]]=[work.items[i],work.items[i-1]]; }
+  else if(act==='itemdown'){ [work.items[i+1],work.items[i]]=[work.items[i],work.items[i+1]]; }
+  else if(act==='addpara'){ (work.paras=work.paras||[]).push(''); }
+  else if(act==='delpara'){ work.paras.splice(i,1); }
+  else if(act==='addrow'){ const t=tableAt(); const n=Math.max(...(t.head||[[]]).map(r=>r.length),(t.rows[0]||[]).length,1); t.rows.push(Array(n).fill('')); }
+  else if(act==='delrow'){ tableAt().rows.splice(i,1); }
+  else if(act==='addcol'){ const t=tableAt(); t.head.forEach(hr=>hr.push({t:''})); t.rows.forEach(r=>r.push('')); }
+  else if(act==='delcol'){ const t=tableAt(); t.head.forEach(hr=>hr.pop()); t.rows.forEach(r=>r.pop()); }
+  else if(act==='addlabel'){ const c=chartAt(); c.labels.push('नयाँ'); c.datasets.forEach(d=>d.data.push(0)); }
+  else if(act==='dellabel'){ const c=chartAt(); c.labels.pop(); c.datasets.forEach(d=>d.data.pop()); }
+  else if(act==='adddataset'){ const c=chartAt(); c.datasets.push({label:'शृंखला '+(c.datasets.length+1), data:c.labels.map(()=>0)}); }
+  else if(act==='deldataset'){ chartAt().datasets.splice(i,1); }
+  else if(act==='addchart'){ work.chart={type:'bar', labels:(work.rows||[]).map(r=>String(r[0]||'')), datasets:[{label:'शृंखला', data:(work.rows||[]).map(()=>0)}]}; }
+  else if(act==='delchart'){ delete work.chart; }
+  else return;
+  renderEditor();
+});
+
+$('#mSave').onclick = async ()=>{
+  try{
+    await api('PUT','/api/slides/'+work._id, stripId(work));
+    DECK.slides[workIndex]=await api('GET','/api/deck').then(d=>d.slides[workIndex]);
+    closeEditor(); renderApp(); toast('✔ स्लाइड सेभ भयो');
+  }catch(e){ toast('⚠ सेभ हुन सकेन',1); }
+};
+function stripId(o){ const {_id, ...rest}=o; return rest; }
+
+$('#mClose').onclick=closeEditor;
+$('#mCancel').onclick=closeEditor;
+$('#overlay').addEventListener('click', e=>{ if(e.target===$('#overlay')) closeEditor(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('#overlay').classList.contains('show')) closeEditor(); });
+
+boot();
+</script>
+</body>
+</html>

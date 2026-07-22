@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>बार्षिक समिक्षा प्रतिवेदन - आ.व. ०८२/०८३</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+:root{
+  --navy:#1b1b52; --navy2:#2b2b74; --green:#1e5b45; --green2:#22795b;
+  --red:#b01e39; --ink:#16162e; --muted:#5b5b74; --line:#d8d8e4;
+  --bg:#eef0f6; --paper:#ffffff;
+  --c0:#2f6bff; --c1:#ec4899; --c2:#38bdf8; --c3:#a855f7; --c4:#f59e0b; --c5:#10b981;
+  --stageW:1280px; --stageH:720px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:"Mukta","Noto Sans Devanagari",system-ui,Arial,sans-serif;
+  background:radial-gradient(1200px 600px at 50% -10%,#f7f8fc,#e7e9f2);
+  color:var(--ink); overflow:hidden;
+}
+button{font-family:inherit}
+
+/* ---------- Toolbar ---------- */
+#toolbar{
+  position:fixed; top:0; left:0; right:0; height:52px; z-index:50;
+  display:flex; align-items:center; gap:8px; padding:0 14px;
+  background:rgba(20,20,46,.92); backdrop-filter:blur(8px);
+  color:#fff; box-shadow:0 2px 18px rgba(0,0,0,.25);
+}
+#toolbar .brand{font-weight:800; letter-spacing:.3px; font-size:15px; margin-right:6px; white-space:nowrap}
+#toolbar .brand small{opacity:.7; font-weight:500}
+.tb-spacer{flex:1}
+.tb-btn{
+  border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); color:#fff;
+  padding:7px 11px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:600;
+  display:inline-flex; align-items:center; gap:6px; transition:.15s;
+}
+.tb-btn:hover{background:rgba(255,255,255,.16)}
+.tb-btn.active{background:#3ad29f; color:#04231a; border-color:#3ad29f}
+/* Save-to-DB button */
+.tb-save{background:#3ad29f; color:#04231a; border-color:#3ad29f; font-weight:700}
+.tb-save:hover{background:#2fbf8e}
+.tb-save.saving{opacity:.7; cursor:progress}
+.tb-save.unsaved{background:#f7b32b; color:#3a2600; border-color:#f7b32b; animation:savePulse 1.6s ease-in-out infinite}
+.tb-save.unsaved:hover{background:#e6a41c}
+@keyframes savePulse{0%,100%{box-shadow:0 0 0 0 rgba(247,179,43,.55)}50%{box-shadow:0 0 0 5px rgba(247,179,43,0)}}
+.tb-group{display:flex; gap:6px; align-items:center}
+.tb-sep{width:1px; height:26px; background:rgba(255,255,255,.15); margin:0 4px}
+
+/* ---------- Stage ---------- */
+#stageWrap{
+  position:fixed; top:52px; left:0; right:0; bottom:0;
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+#stage{
+  width:var(--stageW); height:var(--stageH); position:relative;
+  transform-origin:center center;
+}
+.slide{
+  position:absolute; inset:0; width:var(--stageW); height:var(--stageH);
+  background:var(--paper); border-radius:14px; overflow:hidden;
+  box-shadow:0 30px 70px rgba(20,20,60,.28); opacity:0; pointer-events:none;
+  display:flex; flex-direction:column;
+  transform:scale(.985); transition:opacity .45s ease, transform .45s ease;
+}
+.slide.active{opacity:1; transform:scale(1); pointer-events:auto}
+
+/* decorative header/footer common to content slides */
+.deco-corner{position:absolute; top:0; right:0; width:230px; height:118px;
+  background:linear-gradient(135deg,var(--navy),var(--navy2));
+  clip-path:polygon(28% 0,100% 0,100% 100%,60% 100%); z-index:1}
+.deco-corner:after{content:""; position:absolute; top:0; right:0; width:230px; height:118px;
+  background:#fff; clip-path:polygon(30% 0,38% 0,10% 100%,2% 100%); opacity:.9}
+.slide-head{position:relative; z-index:2; padding:26px 54px 0 54px}
+.office-tag{color:var(--red); font-weight:700; font-size:19px}
+.slide-title{color:var(--navy); font-weight:800; font-size:40px; line-height:1.15; margin:6px 0 0}
+.slide-title .sub{display:block; color:var(--green); font-size:22px; font-weight:600; margin-top:2px}
+.slide-body{position:relative; z-index:2; flex:1; padding:22px 54px 40px; min-height:0}
+.slide-foot{position:absolute; left:0; bottom:0; height:40px; width:100%;
+  display:flex; align-items:center; z-index:2}
+.slide-foot .bar{width:150px; height:100%; background:linear-gradient(90deg,var(--navy),var(--navy2));
+  clip-path:polygon(0 0,100% 0,80% 100%,0 100%)}
+.slide-foot .fname{color:var(--muted); font-size:12.5px; padding-left:14px}
+.slide-foot .pnum{margin-left:auto; padding-right:20px; color:var(--navy); font-weight:700; font-size:13px}
+
+/* ---------- Title slide ---------- */
+.title-slide{background:linear-gradient(180deg,#ffffff,#f4f6ff)}
+.title-slide .chevrons{position:absolute; top:0; right:0; bottom:0; width:46%;
+  background:linear-gradient(135deg,#12123a,var(--navy2)); z-index:1;
+  clip-path:polygon(28% 0,100% 0,100% 100%,10% 100%)}
+.title-slide .chevrons:before{content:""; position:absolute; inset:0; z-index:2;
+  background:repeating-linear-gradient(135deg,transparent 0 46px,rgba(255,255,255,.06) 46px 52px)}
+.title-inner{position:relative; z-index:3; padding:64px 60px; max-width:66%; height:100%;
+  display:flex; flex-direction:column; justify-content:center; gap:6px}
+.crest{height:80px; width:80px; object-fit:contain; margin-bottom:10px;
+  display:block}
+.crest-fallback{width:78px; height:78px; border-radius:50%; background:#fff; margin-bottom:10px;
+  display:flex; align-items:center; justify-content:center; font-size:34px}
+.t-prov{color:var(--red); font-weight:800; font-size:26px}
+.t-min{color:var(--red); font-weight:600; font-size:18px; line-height:1.3}
+.t-office{color:var(--navy); font-weight:800; font-size:21px; margin-top:4px}
+.t-main{color:var(--navy); font-weight:800; font-size:58px; line-height:1.08; margin-top:22px}
+.t-fy{display:inline-block; margin-top:20px; background:var(--red); color:#fff;
+  font-weight:700; font-size:20px; padding:9px 20px; border-radius:8px; width:max-content}
+
+/* ---------- Intro paragraphs ---------- */
+.intro-wrap{display:grid; grid-template-columns:1fr 320px; gap:30px; height:100%}
+.intro-text p{font-size:22px; line-height:1.6; margin:0 0 18px; text-align:justify; color:#20223f}
+.intro-photo{border-radius:12px; background:
+  linear-gradient(135deg,#243b6b,#3a5aa0); position:relative; overflow:hidden;
+  display:flex; align-items:flex-end; color:#fff}
+.intro-photo-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0}
+.intro-photo span{position:relative; z-index:1; padding:14px; font-weight:700; font-size:14px;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.55)); width:100%}
+
+/* ---------- List slide ---------- */
+.list-grid{display:grid; gap:16px 34px; align-content:start; height:100%}
+.list-grid.cols-2{grid-template-columns:1fr 1fr}
+.list-item{display:flex; gap:14px; align-items:flex-start}
+.badge{flex:0 0 auto; width:42px; height:42px; border-radius:50%;
+  background:linear-gradient(160deg,var(--navy),var(--navy2)); color:#fff;
+  font-weight:800; font-size:16px; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 10px rgba(27,27,82,.35)}
+.list-item .txt{font-size:20px; line-height:1.4; padding-top:6px; font-weight:600; color:#23233f}
+.list-grid.big .list-item .txt{font-size:22px}
+
+/* ---------- Tables ---------- */
+.tbl-cap{display:inline-block; background:var(--green); color:#fff; font-weight:700;
+  font-size:19px; padding:9px 20px; border-radius:8px; margin-bottom:14px}
+table.data{border-collapse:collapse; width:100%; font-size:16px; background:#fff}
+table.data th, table.data td{border:1px solid #cfd2e0; padding:8px 12px; text-align:center}
+table.data thead th{background:var(--green); color:#fff; font-weight:700}
+table.data thead th.g2{background:var(--navy)}
+table.data tbody td:first-child{font-weight:600; text-align:left; background:#f4f6fb}
+table.data tbody tr:nth-child(even) td{background:#f8f9fd}
+table.data tbody tr:nth-child(even) td:first-child{background:#eef1f8}
+table.data tr.total td{background:var(--navy)!important; color:#fff; font-weight:800}
+table.data.compact{font-size:14px}
+table.data.compact th, table.data.compact td{padding:5px 7px}
+.tbl-scroll{max-height:100%; overflow:auto}
+.two-tbl{display:grid; grid-template-columns:1fr; gap:22px}
+
+/* ---------- Chart ---------- */
+.chart-box{position:relative; height:100%; width:100%}
+.chart-sub{text-align:center; color:var(--navy); font-weight:700; font-size:17px; margin-bottom:6px}
+.chart-canvas-wrap{position:relative; height:calc(100% - 30px)}
+.chart-fallback{font-size:14px}
+
+/* edit data grid for charts */
+.data-editor{position:absolute; right:8px; top:8px; z-index:6; background:#fff;
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.18);
+  padding:10px; max-height:88%; overflow:auto; display:none; font-size:12px}
+.data-editor.show{display:block}
+.data-editor table{border-collapse:collapse}
+.data-editor td,.data-editor th{border:1px solid var(--line); padding:2px 5px}
+.data-editor input{width:78px; border:1px solid var(--line); border-radius:5px; padding:2px 4px; font:inherit}
+.data-editor .lblcell{min-width:120px}
+.mini-toggle{position:absolute; right:8px; top:8px; z-index:5; display:none}
+body.editing .mini-toggle{display:inline-flex}
+
+/* mode indicator in toolbar */
+.brand-mode{font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap;
+  background:rgba(255,255,255,.12); color:#cfd3ea; border:1px solid rgba(255,255,255,.14)}
+.brand-mode.on{background:rgba(58,210,159,.16); color:#3ad29f; border-color:rgba(58,210,159,.4)}
+
+/* chart type / options controls (edit mode) */
+.chart-ctrls{position:absolute; left:8px; top:8px; z-index:6; display:none; gap:6px;
+  align-items:center; flex-wrap:wrap; background:rgba(255,255,255,.96); padding:6px 8px;
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 22px rgba(0,0,0,.14); font-size:11px}
+body.editing .chart-ctrls{display:flex}
+.chart-ctrls select{font:inherit; font-size:11px; padding:3px 5px; border:1px solid var(--line); border-radius:6px; background:#fff}
+.chart-ctrls label{display:inline-flex; align-items:center; gap:3px; color:var(--navy); font-weight:600; cursor:pointer}
+.chart-ctrls label input{margin:0}
+
+/* ---------- Editing affordance ---------- */
+body.editing [data-edit]{outline:1px dashed rgba(43,43,116,.35); outline-offset:2px; border-radius:4px}
+body.editing [data-edit]:hover{outline-color:var(--red)}
+[data-edit]:focus{outline:2px solid var(--red); background:rgba(176,30,57,.06)}
+body:not(.editing) [contenteditable]{cursor:default}
+
+/* ---------- Nav arrows ---------- */
+.nav-arrow{position:fixed; top:50%; transform:translateY(-50%); z-index:40;
+  width:46px; height:46px; border-radius:50%; border:none; cursor:pointer;
+  background:rgba(27,27,82,.85); color:#fff; font-size:22px; display:flex;
+  align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,.25); transition:.15s}
+.nav-arrow:hover{background:var(--red)}
+#prev{left:16px} #next{right:16px}
+
+/* ---------- Overview ---------- */
+#overview{position:fixed; inset:52px 0 0 0; z-index:45; background:rgba(238,240,246,.98);
+  display:none; overflow:auto; padding:24px}
+#overview.show{display:block}
+.ov-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:18px; max-width:1200px; margin:0 auto}
+.ov-card{background:#fff; border-radius:12px; overflow:hidden; cursor:pointer;
+  box-shadow:0 8px 24px rgba(20,20,60,.12); border:2px solid transparent; transition:.15s}
+.ov-card:hover{transform:translateY(-3px); border-color:var(--navy)}
+.ov-thumb{height:120px; background:linear-gradient(135deg,#1b1b52,#2b2b74); color:#fff;
+  display:flex; align-items:center; justify-content:center; text-align:center; padding:12px; position:relative}
+.ov-thumb .n{position:absolute; top:8px; left:10px; font-size:12px; opacity:.7}
+.ov-thumb .tt{font-weight:700; font-size:15px; line-height:1.25}
+.ov-card .meta{padding:8px 12px; font-size:12px; color:var(--muted); display:flex; justify-content:space-between}
+
+/* toast */
+#toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  background:var(--navy); color:#fff; padding:10px 18px; border-radius:10px; z-index:60;
+  font-size:14px; opacity:0; transition:.25s; pointer-events:none}
+#toast.show{opacity:1}
+
+/* ---------- Entrance animations ---------- */
+@keyframes aFade{from{opacity:0}to{opacity:1}}
+@keyframes aUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes aDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes aLeft{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:translateX(0)}}
+@keyframes aRight{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes aPop{0%{opacity:0;transform:scale(.7)}60%{transform:scale(1.06)}100%{opacity:1;transform:scale(1)}}
+@keyframes aZoom{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes aBadge{0%{opacity:0;transform:scale(.35) rotate(-25deg)}60%{transform:scale(1.14) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+
+/* header / footer / decor */
+.slide.animate .deco-corner{animation:aFade .6s both}
+.slide.animate .office-tag{animation:aDown .5s both}
+.slide.animate .slide-title{animation:aLeft .6s .06s both}
+.slide.animate .slide-foot{animation:aFade .7s .25s both}
+
+/* list items + numbered badges (staggered via inline --i) */
+.slide.animate .list-item{animation:aUp .55s both; animation-delay:calc(.14s + var(--i,0)*.07s)}
+.slide.animate .list-item .badge{animation:aBadge .6s both; animation-delay:calc(.18s + var(--i,0)*.07s)}
+
+/* intro */
+.slide.animate .intro-text p{animation:aLeft .6s both; animation-delay:calc(.15s + var(--i,0)*.14s)}
+.slide.animate .intro-photo{animation:aRight .7s .2s both}
+
+/* tables */
+.slide.animate .tbl-cap{animation:aDown .5s .1s both}
+.slide.animate .tbl-scroll table.data,
+.slide.animate .two-tbl > div{animation:aUp .55s both; animation-delay:calc(.12s + var(--i,0)*.12s)}
+.slide.animate table.data tbody tr{animation:aFade .5s both; animation-delay:calc(.28s + var(--i,0)*.04s)}
+
+/* charts */
+.slide.animate .chart-sub{animation:aDown .5s both}
+.slide.animate .chart-box{animation:aZoom .6s .12s both}
+
+/* title slide */
+.slide.animate .chevrons{animation:aRight .8s both}
+.slide.animate .title-inner > *{animation:aLeft .6s both}
+.slide.animate .title-inner > *:nth-child(1){animation-delay:.15s}
+.slide.animate .title-inner > *:nth-child(2){animation-delay:.28s}
+.slide.animate .title-inner > *:nth-child(3){animation-delay:.41s}
+.slide.animate .title-inner > *:nth-child(4){animation-delay:.54s}
+.slide.animate .title-inner > *:nth-child(5){animation-delay:.67s}
+.slide.animate .title-inner > *:nth-child(6){animation-delay:.80s}
+
+/* thanks */
+.slide.animate .thanks-big{animation:aPop .8s both}
+
+/* hover micro-interactions */
+.list-item{transition:transform .2s ease}
+.list-item:hover{transform:translateX(5px)}
+.badge{transition:transform .2s ease, box-shadow .2s ease}
+.list-item:hover .badge{transform:scale(1.1); box-shadow:0 6px 16px rgba(27,27,82,.45)}
+table.data tbody tr{transition:background .15s ease}
+table.data tbody tr:not(.total):hover td{background:#eef3ff!important}
+table.data tbody tr:not(.total):hover td:first-child{background:#e2eaff!important}
+.t-fy{transition:transform .2s ease, box-shadow .2s ease}
+.t-fy:hover{transform:translateY(-2px); box-shadow:0 8px 18px rgba(176,30,57,.4)}
+
+/* respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .slide{transition:none}
+  .slide *{animation:none!important}
+}
+
+/* ---------- Fullscreen: hide the toolbar and use the whole screen ---------- */
+:fullscreen #toolbar{display:none}
+:fullscreen #stageWrap{top:0}
+:fullscreen #overview{top:0}
+:-webkit-full-screen #toolbar{display:none}
+:-webkit-full-screen #stageWrap{top:0}
+:-webkit-full-screen #overview{top:0}
+
+/* ---------- Exported stand-alone file: no toolbar, full-screen stage ---------- */
+html.exported #toolbar{display:none}
+html.exported #stageWrap{top:0}
+html.exported #overview{top:0}
+
+/* Floating full-screen button — only shown when the toolbar is hidden (exported file) */
+#fsFloat{
+  position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:60;
+  display:none; align-items:center; gap:6px;
+  border:1px solid rgba(255,255,255,.18); background:rgba(20,20,46,.92); backdrop-filter:blur(8px);
+  color:#fff; padding:8px 16px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:600;
+  box-shadow:0 2px 14px rgba(0,0,0,.28); transition:.15s;
+}
+#fsFloat:hover{background:rgba(40,40,80,.96)}
+html.exported #fsFloat{display:inline-flex}
+:fullscreen #fsFloat{display:none!important}
+:-webkit-full-screen #fsFloat{display:none!important}
+@media print{#fsFloat{display:none!important}}
+
+/* ---------- Print ---------- */
+@media print{
+  .slide *{animation:none!important; opacity:1!important}
+  #toolbar,.nav-arrow,#overview,.mini-toggle,.data-editor{display:none!important}
+  body{overflow:visible; background:#fff}
+  #stageWrap{position:static; height:auto; display:block}
+  #stage{transform:none!important; width:100%; height:auto}
+  .slide{position:relative; opacity:1!important; pointer-events:auto; page-break-after:always;
+    box-shadow:none; border-radius:0; width:100%; height:100vh; margin:0}
+}
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <div class="brand">📊 समिक्षा प्रतिवेदन <small>· आ.व. ०८२/०८३</small></div>
+  <span class="brand-mode" id="modePill" title="डाटा भण्डारण अवस्था">…</span>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <button class="tb-btn tb-save" id="btnSaveDb" title="डाटाबेसमा सेभ गर्नुहोस् (Ctrl+S)">🗄 डाटाबेसमा सेभ</button>
+    <button class="tb-btn" id="btnEdit">✏️ सम्पादन</button>
+    <button class="tb-btn" id="btnOverview">▦ सबै स्लाइड</button>
+    <button class="tb-btn" id="btnFull">⛶ फुलस्क्रिन</button>
+    <a class="tb-btn" id="btnAdmin" href="/admin" title="एडमिन प्यानल खोल्नुहोस्" style="display:none;text-decoration:none">🗄 एडमिन</a>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group" id="editTools" style="display:none">
+    <button class="tb-btn" id="btnAdd">＋ स्लाइड</button>
+    <button class="tb-btn" id="btnDup">⧉ कपी</button>
+    <button class="tb-btn" id="btnDel">🗑 हटाउ</button>
+    <button class="tb-btn" id="btnMoveL">◀ सार</button>
+    <button class="tb-btn" id="btnMoveR">सार ▶</button>
+  </div>
+  <div class="tb-spacer"></div>
+  <div class="tb-group">
+    <button class="tb-btn" id="btnExport">⬇ JSON</button>
+    <button class="tb-btn" id="btnImport">⬆ आयात</button>
+    <button class="tb-btn" id="btnSaveHtml">💾 HTML</button>
+    <button class="tb-btn" id="btnPrint">🖨 PDF</button>
+    <button class="tb-btn" id="btnReset">↺ रिसेट</button>
+  </div>
+  <input type="file" id="fileInput" accept="application/json" style="display:none">
+</div>
+
+<button id="fsFloat" title="फुलस्क्रिन">⛶ फुलस्क्रिन</button>
+
+<button class="nav-arrow" id="prev">‹</button>
+<button class="nav-arrow" id="next">›</button>
+
+<div id="stageWrap">
+  <div id="stage"></div>
+</div>
+
+<div id="overview"><div class="ov-grid" id="ovGrid"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   DECK DATA MODEL  —  edit here to change content directly,
+   or use the on-screen ✏️ सम्पादन (Edit) mode.
+   ============================================================ */
+const ORIGINAL_DECK = {
+  meta:{
+    province:"गण्डकी प्रदेश",
+    ministry:"भौतिक पूर्वाधार तथा यातायात व्यवस्था मन्त्रालय",
+    office:"यातायात व्यवस्था कार्यालय, नवलपरासी (ब.सु.पू.)",
+    officeFull:"यातायात व्यवस्था कार्यालय, नवलपरासी (बर्दघाट सुस्तापूर्व)",
+    fy:"आ.व. ०८२/०८३",
+    reportTitle:"बार्षिक समिक्षा प्रतिवेदन"
+  },
+  slides:[
+    { type:"title" },
+
+    { type:"intro", title:"कार्यालय परिचय",
+      paras:[
+        "गण्डकी प्रदेशको एक मात्र भित्रि मधेसको जिल्ला नवलपरासी (बर्दघाट सुस्तापूर्व) मा अवस्थित यस कार्यालयको स्थापना यातायातसंग सम्बन्धित सेवा सुबिधाहरू पायक पर्ने स्थानबाट यस क्षेत्रका जनताहरुलाई उपलब्ध गराउन सकियोस भन्ने उदेश्यले २०७५ असोज १७ गते भएको हो।",
+        "यस कार्यालयबाट हालसम्म विशेषत नवलपरासी (ब.सु.पू.) जिल्लाबासीहरू लाभान्वित भएका छन् । गण्डकी प्रदेशका विभिन्न जिल्लामा स्थायी बसोबास भई हाल रुपन्देही एवं चितवन जिल्लामा रहेका सेवाग्राहीले समेत सेवा पाइरहेको अवस्था छ ।"
+      ],
+      photoText:"यातायात व्यवस्था कार्यालय भवन" },
+
+    { type:"list", title:"कार्यालयबाट प्रदान गरिने सेवाहरू", cols:2, items:[
+      "सवारी साधन कर सङ्कलन, ब्लुबुक नविकरण",
+      "सवारी चालक अनुमतिपत्र जारी , नविकरण",
+      "सवारी साधन दर्ता, नामसारी",
+      "बाटो इजाजत (रुट परमिट)",
+      "बाटो इजाजत पत्रको नविकरण",
+      "यातायात सेवाको पंजीकरण",
+      "सवारी साधन जाँचपास",
+      "प्रदुषण जाँच",
+      "सवारी चालक अनुमतिपत्रको प्रमाणीकरण",
+      "पटके मार्ग इजाजत"
+    ]},
+
+    { type:"table", title:"बजेट कार्यान्वयनको अवस्था",
+      head:[[{t:""},{t:"विनियोजित"},{t:"खर्च"},{t:"%"}]],
+      rows:[
+        ["चालु",19534000,16826657,86.14],
+        ["पुँजीगत",1400000,990678,70.76],
+        ["जम्मा",20934000,17817335,85.11]
+      ],
+      totalRow:true,
+      chart:{ type:"bar", labels:["चालु","पुँजीगत","जम्मा"],
+        datasets:[
+          {label:"विनियोजित", data:[19534000,1400000,20934000]},
+          {label:"खर्च", data:[16826657,990678,17817335]}
+        ]}
+    },
+
+    { type:"table", title:"पाँच आ.व. बजेट कार्यान्वयनको अवस्था", compact:true,
+      head:[
+        [{t:"आ.व",rs:2},{t:"विनियोजित बजेट",cs:3},{t:"खर्च भएको बजेट",cs:3,g2:true}],
+        [{t:"चालु"},{t:"पुँजीगत"},{t:"जम्मा"},{t:"चालु",g2:true},{t:"पुँजीगत",g2:true},{t:"जम्मा",g2:true}]
+      ],
+      rows:[
+        ["०८१/०८२",19534000,1400000,20934000,16826657,990678,17817335],
+        ["०८०/०८१",21004000,2300000,23304000,13748467,1864608,15613075],
+        ["०७९/०८०",19452000,1000000,20452000,13745830,557363,14303193],
+        ["०७८/०७९",18392000,1000000,19392000,12472920,984429,13457349],
+        ["०७७/०७८",15749000,1200000,16949000,8815357,988890,9804247]
+      ]},
+
+    { type:"chart", title:"पाँच आ.व. बजेट कार्यान्वयनको अवस्था",
+      chart:{ type:"bar", sub:"बजेट विनियोजन र खर्च",
+        labels:["०७७/०७८","०७८/०७९","०७९/०८०","०८०/०८१","०८१/०८२"],
+        datasets:[
+          {label:"विनियोजन", data:[16949000,19392000,20452000,23304000,20934000]},
+          {label:"खर्च", data:[9804247,13457349,14303193,15613075,17817335]}
+        ]}
+    },
+
+    { type:"table", title:"राजस्व सङ्कलनको मासिक अवस्था", compact:true,
+      head:[[{t:"महिना"},{t:"सवारी साधन कर (३३३४१)"},{t:"स.चा.अ.प/ब्लुबुक नविकरण (१४२५६)"},{t:"यातायात क्षेत्रको आम्दानि (१४२२५)"},{t:"आयकर (१११११)"}]],
+      rows:[
+        ["श्रावन",15039650,4150400,261640,397775],
+        ["भाद्र",13557230,3204900,219390,463000],
+        ["आश्विन",16900750,3004600,213250,1066250],
+        ["कार्तिक",21509080,3108400,257110,852870],
+        ["मङ्सिर",23582795,3958800,254940,1028575],
+        ["पौष",23047250,5304350,257030,819200],
+        ["माघ",19616530,4850400,306780,868050],
+        ["फाल्गुण",19305475,4421400,283410,921150],
+        ["चैत्र",42174315,5455150,304910,1993850],
+        ["बैशाख",12766455,3377700,212040,429025],
+        ["जेठ",10179240,3096100,231280,319375],
+        ["असार",14612733,4087600,396120,501325]
+      ]},
+
+    { type:"chart", title:"राजस्व सङ्कलनको मासिक अवस्था",
+      chart:{ type:"line",
+        labels:["श्रावन","भाद्र","आश्विन","कार्तिक","मङ्सिर","पौष","माघ","फाल्गुण","चैत्र","बैशाख","जेठ","असार"],
+        datasets:[
+          {label:"सवारी साधन कर (३३३४१)", data:[15039650,13557230,16900750,21509080,23582795,23047250,19616530,19305475,42174315,12766455,10179240,14612733]},
+          {label:"स.चा.अ.प/ब्लुबुक नविकरण (१४२५६)", data:[4150400,3204900,3004600,3108400,3958800,5304350,4850400,4421400,5455150,3377700,3096100,4087600]},
+          {label:"यातायात क्षेत्रको आम्दानि (१४२२५)", data:[261640,219390,213250,257110,254940,257030,306780,283410,304910,212040,231280,396120]},
+          {label:"आयकर (१११११)", data:[397775,463000,1066250,852870,1028575,819200,868050,921150,1993850,429025,319375,501325]}
+        ]}
+    },
+
+    { type:"table", title:"राजस्व सङ्कलन शिर्षकगत",
+      head:[[{t:"राजस्व शिर्षक"},{t:"सङ्कलित रकम"}]],
+      rows:[
+        ["सवारी साधन कर (33341)",228796748],
+        ["स.चा.अ.प/ब्लुबुक नविकरण (14256)",51516055],
+        ["यातायात क्षेत्रको आम्दानी",3166500],
+        ["अन्य प्रशासनिक सेवा शुल्क",1102350],
+        ["बेरुजु (15111)",5545],
+        ["जम्मा",284587098]
+      ],
+      totalRow:true,
+      chart:{ type:"bar", horizontal:false,
+        labels:["सवारी साधन कर","स.चा.अ.प/ब्लुबुक","यातायात आम्दानी","अन्य प्रशासनिक","बेरुजु"],
+        datasets:[{label:"सङ्कलित रकम", data:[228796748,51516055,3166500,1102350,5545]}]}
+    },
+
+    { type:"table", title:"पाँच आ.व. को राजस्व सङ्कलन", compact:true,
+      head:[[{t:"आ.व."},{t:"सवारी साधन कर (33341)"},{t:"स.चा.अ.प/ब्लुबुक नविकरण (14256)"},{t:"यातायात क्षेत्रको आम्दानि (14225)"},{t:"अन्य प्रशासनिक सेवा शुल्क 14229"},{t:"बेरुजु (15111)"}]],
+      rows:[
+        ["077/78",173106040,20961445,4292340,55000,6375],
+        ["078/79",199842462,50579283,4758095,213100,847112],
+        ["079/80",229048231,72461425,3562730,3308900,65049],
+        ["080/81",238605313,50652918,3846430,802690,0],
+        ["081/82",228796748,51516055,3166500,1102350,5445]
+      ]},
+
+    { type:"chart", title:"पाँच आ.व.को राजस्व सङ्कलनको अवस्था",
+      chart:{ type:"line", sub:"करको प्रकार", dualAxis:true,
+        labels:["077/78","078/79","079/80","080/81","081/82"],
+        datasets:[
+          {label:"सवारी साधन कर (३३३४१)", data:[173106040,199842462,229048231,238605313,228796748], axis:"y1"},
+          {label:"स.चा.अ.प/ब्लुबुक नविकरण/प्रतिलिपि (१४२५६)", data:[20961445,50579283,72461425,50652918,51516055]},
+          {label:"यातायात क्षेत्रको आम्दानि (१४२२५)", data:[4292340,4758095,3562730,3846430,3166500]},
+          {label:"अन्य प्रशासनिक सेवा शुल्क", data:[55000,213100,3308900,802690,1102350]},
+          {label:"बेरुजु (१५१११)", data:[6375,847112,65049,0,5445]}
+        ]}
+    },
+
+    { type:"table", title:"सवारी साधन दर्ताको अवस्था",
+      caption:"दुई पाङ्ग्रे सवारी साधनको दर्ता (विगत पाँच आ.व. देखि)",
+      head:[[{t:"सवारीको किसिम"},{t:"077/78"},{t:"078/79"},{t:"079/80"},{t:"080/81"},{t:"081/82"}]],
+      rows:[
+        ["सरकारी",19,29,31,5,18],
+        ["निजि",1755,2614,1185,1332,3513]
+      ],
+      chart:{ type:"bar",
+        labels:["077/78","078/79","079/80","080/81","081/82"],
+        datasets:[
+          {label:"सरकारी", data:[19,29,31,5,18]},
+          {label:"निजि", data:[1755,2614,1185,1332,3513]}
+        ]}
+    },
+
+    { type:"table", title:"सवारी साधन दर्ताको अवस्था",
+      caption:"चार पाङ्ग्रे सवारी साधनको दर्ता (विगत पाँच आ.व. देखि)",
+      head:[[{t:"सवारीको किसिम"},{t:"077/78"},{t:"078/79"},{t:"079/80"},{t:"080/81"},{t:"081/82"}]],
+      rows:[
+        ["सरकारी",1,9,15,12,9],
+        ["निजि",142,286,163,122,194],
+        ["सार्वजनिक",77,232,151,92,159]
+      ],
+      chart:{ type:"bar",
+        labels:["077/78","078/79","079/80","080/81","081/82"],
+        datasets:[
+          {label:"सरकारी", data:[1,9,15,12,9]},
+          {label:"निजि", data:[142,286,163,122,194]},
+          {label:"सार्वजनिक", data:[77,232,151,92,159]}
+        ]}
+    },
+
+    { type:"table", title:"सवारी चालक अनुमतिपत्रको विवरण (मासिक)", compact:true,
+      head:[[{t:"महिना"},{t:"आवेदन दर्ता"},{t:"लिखित प.मा सहभागी"},{t:"ट्रायल परीक्षामा सहभागी"},{t:"लाइसेन्स जारी"},{t:"लाइसेन्स नवीकरण"}]],
+      rows:[
+        ["श्रावण",2478,581,1463,604,508],
+        ["भदौ",2170,626,1665,587,293],
+        ["असोज",1984,528,1358,631,177],
+        ["कार्तिक",1557,748,692,346,221],
+        ["मङ्सिर",2561,959,1866,823,239],
+        ["पौष",3734,935,2461,950,247],
+        ["माघ",3290,1131,1729,630,304],
+        ["फाल्गुण",2935,720,1824,821,250],
+        ["चैत्र",3062,1186,2399,1050,206],
+        ["वैशाख",2517,645,1185,404,171],
+        ["जेठ",3197,888,2171,408,198],
+        ["असार",2643,755,2348,763,213]
+      ]},
+
+    { type:"chart", title:"सवारी चालक अनुमतिपत्रको विवरण (मासिक तुलना)",
+      chart:{ type:"line",
+        labels:["श्रावण","भदौ","असोज","कार्तिक","मङ्सिर","पौष","माघ","फाल्गुण","चैत्र","वैशाख","जेठ","असार"],
+        datasets:[
+          {label:"आवेदन दर्ता", data:[2478,2170,1984,1557,2561,3734,3290,2935,3062,2517,3197,2643]},
+          {label:"लिखित परीक्षामा सहभागी", data:[581,626,528,748,959,935,1131,720,1186,645,888,755]},
+          {label:"ट्रायल परीक्षामा सहभागी", data:[1463,1665,1358,692,1866,2461,1729,1824,2399,1185,2171,2348]},
+          {label:"ट्रायल उत्तीर्ण (लाइसेन्स जारी)", data:[604,587,631,346,823,950,630,821,1050,404,408,763]},
+          {label:"लाइसेन्स नवीकरण", data:[508,293,177,221,239,247,304,250,206,171,198,213]}
+        ]}
+    },
+
+    { type:"table", title:"पाँच आ.व. को स.चा.अ.प.को विवरण",
+      head:[[{t:"आ.व."},{t:"आवेदन सङ्ख्या"},{t:"लिखित परीक्षामा सहभागी"},{t:"ट्रायल परीक्षामा सहभागी"},{t:"लाइसेन्स जारी"},{t:"लाइसेन्स नवीकरण"}]],
+      rows:[
+        ["077/78",11699,6781,9885,2570,232],
+        ["078/79",40367,20067,36700,10540,1024],
+        ["079/80",41278,21068,37029,16659,4208],
+        ["080/81",18154,7484,15885,7298,4699],
+        ["081/082",20790,9220,20261,8017,3054]
+      ]},
+
+    { type:"chart", title:"पाँच आ.व. को स.चा.अ.प.को स्थिति",
+      chart:{ type:"line",
+        labels:["077/78","078/79","079/80","080/81","081/082"],
+        datasets:[
+          {label:"आवेदन सङ्ख्या", data:[11699,40367,41278,18154,20790]},
+          {label:"लिखित परीक्षामा सहभागी", data:[6781,20067,21068,7484,9220]},
+          {label:"ट्रायल परीक्षामा सहभागी", data:[9885,36700,37029,15885,20261]},
+          {label:"लाइसेन्स जारी", data:[2570,10540,16659,7298,8017]},
+          {label:"लाइसेन्स नवीकरण", data:[232,1024,4208,4699,3054]}
+        ]}
+    },
+
+    { type:"table", title:"रूटपरमिट तथा जाँचपास दर्ता/नवीकरण स्थिति सङ्ख्यामा",
+      head:[[{t:"आ.व."},{t:"जाँचपास"},{t:"रूटपरमिट"}]],
+      rows:[
+        ["077/78",1745,500],
+        ["078/79",2536,725],
+        ["079/80",2211,540],
+        ["080/81",2532,642],
+        ["081/082",1414,425]
+      ],
+      chart:{ type:"bar",
+        labels:["077/78","078/79","079/80","080/81","081/082"],
+        datasets:[
+          {label:"जाँचपास", data:[1745,2536,2211,2532,1414]},
+          {label:"रूटपरमिट", data:[500,725,540,642,425]}
+        ]}
+    },
+
+    { type:"table", title:"स्वीकृत स्थायी दरबन्दी तथा पदपूर्तिको अवस्था", compact:true,
+      head:[[{t:"क्र.स."},{t:"पद नाम"},{t:"श्रेणी/तह"},{t:"सेवा"},{t:"समूह"},{t:"स्वीकृत दरवन्दी"},{t:"पदपूर्ति"},{t:"रिक्त"},{t:"कैफियत"}]],
+      rows:[
+        [1,"उप-सचिव","अधिकृत नवौँ/दशौँ","प्रदेश प्रशासन","प्रशासन",1,0,1,""],
+        [2,"प्रशासकीय अधिकृत","अधिकृत सातौँ/आठौँ","प्रदेश प्रशासन","प्रशासन",1,1,0,""],
+        [3,"मेकानिकल इन्जिनियर","अधिकृत सातौँ/आठौँ","प्रदेश इन्जिनियरिङ","जनरल मेकानिकल",1,0,1,""],
+        [4,"सहायक/अधिकृत","पाचौं/छैठौं","प्रदेश प्रशासन","प्रशासन",3,2,1,""],
+        [5,"सहायक/अधिकृत लेखा","पाचौं/छैठौं","प्रदेश प्रशासन","प्रशासन",1,1,0,""],
+        [6,"सहायक/अधिकृत","पाचौं/छैठौं","प्रदेश प्रशासन","विविध",2,2,0,"1-करार"],
+        [7,"मेकानिकल सुपरभाइजर","पाचौं/छैठौं","प्रदेश इन्जिनियरिङ","जनरल मेकानिकल",1,1,0,""],
+        [8,"सहायक","चौथो/पाँचौँ","प्रदेश प्रशासन","प्रशासन",3,1,2,""],
+        [9,"ह.स.चा","श्रेणी विहिन","इन्जिनियरिङ्ग","मेकानिकल",1,1,0,""],
+        [10,"कार्यालय सहयोगी","श्रेणी विहिन","प्रदेश प्रशासन","प्रशासन",2,2,0,""],
+        ["","जम्मा","","","",16,11,5,""]
+      ],
+      totalRow:true },
+
+    { type:"twotable", title:"भौतिक पूर्वाधारको अवस्था",
+      tables:[
+        { head:[[{t:"विषय"},{t:"सङ्ख्या"},{t:"भवन संरचना"},{t:"आफ्नै स्वामित्व"},{t:"भाडामा रहेको"}]],
+          rows:[
+            ["भवन","-","-","नरहेको","भाडामा"],
+            ["ट्रायल स्पट","-","-","नरहेको","निजि स्पट सम्झौतामा"],
+            ["जग्गा","-","-","नरहेको",""]
+          ]},
+        { head:[[{t:"सवारी साधनको विवरण",g2:true},{t:"संख्या",g2:true},{t:"अवस्था",g2:true}]],
+          rows:[
+            ["दुई पाङ्ग्रे",2,"मर्मत गर्नुपर्ने"],
+            ["चार पाङ्ग्रे",2,"लिलाम गर्नुपर्ने"]
+          ]}
+      ]},
+
+    { type:"list", title:"अनलाइन प्रणालीबाट उपलब्ध सुविधाहरू", cols:1, big:true, items:[
+      "सवारी चालक अनुमतिपत्रको फाराम भर्ने सुविधा",
+      "कार्यालयबाट हुने सेवा प्रवाहका सूचनाहरू",
+      "सवारी चालक अनुमतिपत्र वितरण सुचना",
+      "सामाजिक सञ्जालबाट सुचना जानकारी तथा गुनासो सुन्ने",
+      "सवारी साधन दर्ताको अनलाइन फाराम"
+    ]},
+
+    { type:"list", title:"कार्यसम्पादनको क्रममा देखिएका समस्याहरू", cols:1, big:true, items:[
+      "कार्यालयको आफ्नै भवन नभएको, भाडाको भवन पर्याप्त नभएको, सार्वजनिक शौचालयको अभाव भएको,",
+      "आफ्नै प्रयोगात्मक परिक्षास्थल र परीक्षाहल नभएको,",
+      "प्रदेशको आफ्नै सवारी चालक अनुमतिपत्र तथा सवारी दर्ता प्रणालीका जटिलताहरूले कार्यसम्पादनमा प्रत्यक्ष असर परिरहेको,",
+      "सवारी चालक अनुमतिपत्र समयमै प्रिन्ट नहुँदा सेवाग्राहीको गुनासो बढेको,",
+      "कर्मचारीहरूलाई तालिमको अभाव भएको,"
+    ]},
+
+    { type:"list", title:"समस्या समाधानको लागि गरिएका प्रयासहरू", cols:1, big:true, items:[
+      "कार्यालयको भवन अपर्याप्त भएता पनि संयोजन गरी कार्य संचालन गरिरहेको,",
+      "निजि प्रशिक्षण केन्द्रसंग सम्झौता गरी परीक्षाहरू संचालन गरिरहेको,",
+      "विभागसँग समन्वय गरी आंशिक रुपले समस्या समाधान गरिरहेको,",
+      "पटक पटक विभागलाई सवारी चालक अनुमतिपत्र छापिदिन अनुरोध गरेको तर प्रयास सफल नभएको,",
+      "कर्मचारीलाई अतिरिक्त समय दिई कार्यसम्पादन गर्नुपरेको, कार्य विभाजन असन्तुलित हुन पुगेको"
+    ]},
+
+    { type:"list", title:"सुझावहरू", cols:1, big:true, startNo:1, items:[
+      "सवारी चालक अनुमतिपत्रको छपाईको व्यवस्था प्रदेश सरकारले लिई सिघ्र प्रिन्टको व्यवस्था गर्नुपर्ने,",
+      "प्रदेश सरकारले आफ्नै सवारी चालक अनुमतिपत्र र सवारी दर्ता प्रणाली निर्माण गरी प्रयोगमा ल्याउनु पर्ने,",
+      "सवारी साधन कर तथा नवीकरण अनलाइनबाटै गर्न मिल्ने व्यवस्था गर्नुपर्ने,",
+      "सेवाग्राहीले चाहेको आ.व.को सवारी साधन कर आफुले चाहेको किस्तामा तिर्न पाउनुपर्ने गरी ऐन संसोधन र प्रणाली संचालनमा ल्याउनुपर्ने,",
+      "सवारी साधन कर माथि लाग्ने गरेको जरिमानालाई विचार गर्नुपर्ने,"
+    ]},
+
+    { type:"list", title:"सुझावहरू", cols:1, big:true, startNo:6, items:[
+      "नेपाल सरकारले तोकेको मापदण्ड भित्र नपर्ने तर आफ्नै ट्रायल फिल्ड र सवारी साधन भएका प्रशिक्षण केन्द्रलाई आवश्यक न्युनतम मापदण्ड तयार गरी लागु गर्नुपर्ने",
+      "रिकन्डिसन हाउस र साना मर्मत केन्द्रहरूलाई नियमन गर्न छुट्टै मापदण्ड लागु गर्नुपर्ने, हालको मापदण्ड ठुला वर्कसप र कारखानाको लागि मात्र उपयुक्त छ,"
+    ]},
+
+    { type:"list", title:"प्रदेश सरकार तथा मन्त्रालयसँग अपेक्षा", cols:1, big:true, items:[
+      "प्रदेशको आफ्नै सवारी चालक अनुमतिपत्र तथा सवारी दर्ता प्रणाली,",
+      "कार्यालयको आफ्नै भवन र परिक्षण स्थल,",
+      "कम्प्युटर अपरेटरको स्थायी प्रकृतिको दरवन्दी सिर्जना, भएका कर्मचारीहरूलाई प्रविधि सम्बन्धी तालिम",
+      "केन्द्रीय सरकारको नागरिक एप जस्तै गण्डकी प्रदेशको एकीकृत सेवा तथा जानकारी सम्बन्धि मोबाइल एप्लिकेसन",
+      "सवारी चालक अनुमतिपत्र प्रिन्ट कार्यको शिघ्र सुरुवात"
+    ]},
+
+    { type:"thanks", text:"धन्यवाद !" }
+  ]
+};
+
+/* ============================================================
+   APP
+   ============================================================ */
+const PALETTE = ['#2f6bff','#ec4899','#38bdf8','#a855f7','#f59e0b','#10b981','#ef4444'];
+const LS_KEY = 'annualReviewDeck_v1';
+let DECK = {meta:{},slides:[]};
+let cur = 0;
+let editing = false;
+const chartInstances = {};
+
+/* ---------- Persistence layer ----------
+   SERVER mode  : deck is loaded from and saved to the Flask/SQLite API.
+   Offline mode : (opened as a bare file, no backend) falls back to
+   localStorage + the embedded ORIGINAL_DECK, so the deck still works stand-alone. */
+let SERVER = false;
+const dirty = { meta:false, slides:new Set() };
+
+async function api(method, url, body){
+  const res = await fetch(url, {
+    method,
+    headers: body!==undefined ? {'Content-Type':'application/json'} : undefined,
+    body: body!==undefined ? JSON.stringify(body) : undefined
+  });
+  if(!res.ok) throw new Error(method+' '+url+' → '+res.status);
+  return res.status===204 ? null : res.json();
+}
+
+async function bootstrap(){
+  try{
+    DECK = await api('GET','/api/deck');
+    if(!DECK || !Array.isArray(DECK.slides)) throw new Error('bad deck');
+    SERVER = true;
+  }catch(e){
+    SERVER = false;
+    DECK = load();
+  }
+  render(); show(0);
+  document.getElementById('modePill').textContent = SERVER ? '● सर्भर' : '○ अफलाइन';
+  document.getElementById('modePill').className = 'brand-mode'+(SERVER?' on':'');
+  document.getElementById('btnSaveDb').title = SERVER
+    ? 'डाटाबेसमा सेभ गर्नुहोस् (Ctrl+S)'
+    : 'यसै ब्राउजरमा सेभ गर्नुहोस् — सर्भर चलेको छैन (Ctrl+S)';
+  document.getElementById('btnAdmin').style.display = SERVER ? 'inline-flex' : 'none';
+  setSaveUI('saved');
+}
+
+function load(){
+  try{ const s = localStorage.getItem(LS_KEY); if(s) return JSON.parse(s); }catch(e){}
+  return structuredClone(ORIGINAL_DECK);
+}
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(DECK)); }catch(e){} }
+
+// Reload the whole deck from the server after a structural change (keeps ids/order in sync).
+async function reloadDeck(){ DECK = await api('GET','/api/deck'); render(); }
+
+// Mark which entity a path-based text edit touched, so we only PUT what changed.
+function markDirty(path){
+  if(path.startsWith('meta.')) dirty.meta = true;
+  else { const m = path.match(/^slides\.(\d+)(?:\.|$)/); if(m) dirty.slides.add(+m[1]); }
+}
+function slidePayload(sl){ const {_id, ...rest} = sl; return rest; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function ce(path){ return `contenteditable="false" data-edit="${path}"`; }
+
+/* ---------- Render ---------- */
+const stage = document.getElementById('stage');
+
+function render(){
+  // destroy charts
+  Object.values(chartInstances).forEach(c=>{try{c.destroy()}catch(e){}});
+  for(const k in chartInstances) delete chartInstances[k];
+  stage.innerHTML='';
+  DECK.slides.forEach((sl,i)=>{
+    const el = document.createElement('section');
+    el.className='slide'+(i===cur?' active':'');
+    el.dataset.index=i;
+    el.innerHTML = renderSlide(sl,i);
+    stage.appendChild(el);
+  });
+  applyEditing();
+  fit();
+  ensureChart(cur);
+  updateArrows();
+  animateSlide(cur);
+}
+
+// (Re)trigger the entrance animations on the active slide. Only the active
+// slide carries the `animate` class; removing + reflowing + re-adding it
+// restarts the CSS animations so they replay on every navigation.
+function animateSlide(i){
+  const kids=stage.children;
+  for(const el of kids) el.classList.remove('animate');
+  const el=kids[i];
+  if(!el) return;
+  void el.offsetWidth; // force reflow so the animations restart
+  el.classList.add('animate');
+}
+
+// Lazily build only the active slide's chart to avoid many simultaneous
+// resize-observers inside the scaled stage (which can peg the renderer).
+function ensureChart(i){
+  const sl=DECK.slides[i];
+  if(sl && sl.chart && !chartInstances[i]) buildChart(i,sl);
+}
+
+function frame(inner, sl, i){
+  const m=DECK.meta;
+  return `
+    <div class="deco-corner"></div>
+    <div class="slide-head">
+      <div class="office-tag" ${ce('meta.officeFull')}>${esc(m.officeFull)}</div>
+      <h2 class="slide-title" ${ce('slides.'+i+'.title')}>${esc(sl.title||'')}${sl.chart&&sl.chart.sub?'':''}</h2>
+    </div>
+    <div class="slide-body">${inner}</div>
+    <div class="slide-foot">
+      <div class="bar"></div>
+      <div class="fname">${esc(m.officeFull)}</div>
+      <div class="pnum">${i+1} / ${DECK.slides.length}</div>
+    </div>`;
+}
+
+function renderSlide(sl,i){
+  switch(sl.type){
+    case 'title': return renderTitle(i);
+    case 'intro': return frame(renderIntro(sl,i),sl,i);
+    case 'list': return frame(renderList(sl,i),sl,i);
+    case 'table': return frame(renderTableSlide(sl,i),sl,i);
+    case 'twotable': return frame(renderTwoTable(sl,i),sl,i);
+    case 'chart': return frame(renderChartSlide(sl,i),sl,i);
+    case 'thanks': return renderThanks(sl,i);
+    default: return frame('<div>?</div>',sl,i);
+  }
+}
+
+function renderTitle(i){
+  const m=DECK.meta;
+  return `
+  <div class="slide title-slide" style="display:flex">
+    <div class="chevrons"></div>
+    <div class="title-inner">
+      <img class="crest" src="data:image/png;base64,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" alt="नेपाल सरकार" onerror="this.onerror=null;this.outerHTML='<div class=&quot;crest-fallback&quot;>🛞</div>'">
+      <div class="t-prov" ${ce('meta.province')}>${esc(m.province)}</div>
+      <div class="t-min" ${ce('meta.ministry')}>${esc(m.ministry)}</div>
+      <div class="t-office" ${ce('meta.office')}>${esc(m.office)}</div>
+      <div class="t-main" ${ce('meta.reportTitle')}>${esc(m.reportTitle)}</div>
+      <div class="t-fy" ${ce('meta.fy')}>${esc(m.fy)}</div>
+    </div>
+  </div>`.replace('<div class="slide title-slide" style="display:flex">','<div class="title-slide" style="position:absolute;inset:0;display:flex">');
+}
+
+function renderThanks(sl,i){
+  const m=DECK.meta;
+  return `
+  <div class="deco-corner"></div>
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(120deg,#fff 60%,#eef1ff)">
+    <div class="thanks-big" style="font-size:96px;font-weight:800;color:var(--navy)" ${ce('slides.'+i+'.text')}>${esc(sl.text)}</div>
+  </div>
+  <div class="slide-foot"><div class="bar"></div><div class="fname">${esc(m.officeFull)}</div><div class="pnum">${i+1} / ${DECK.slides.length}</div></div>`;
+}
+
+function renderIntro(sl,i){
+  const paras = sl.paras.map((p,pi)=>`<p style="--i:${pi}" ${ce('slides.'+i+'.paras.'+pi)}>${esc(p)}</p>`).join('');
+  return `<div class="intro-wrap">
+    <div class="intro-text">${paras}</div>
+    <div class="intro-photo">
+      <img class="intro-photo-img" src="${esc(sl.photo||'office.jpg')}" alt=""
+        onerror="if(this.dataset.f){this.remove()}else{this.dataset.f=1;this.src='office.png'}">
+      <span ${ce('slides.'+i+'.photoText')}>${esc(sl.photoText||'')}</span>
+    </div>
+  </div>`;
+}
+
+function renderList(sl,i){
+  const start = sl.startNo||1;
+  const items = sl.items.map((t,ii)=>`
+    <div class="list-item" style="--i:${ii}">
+      <div class="badge">${pad(start+ii)}</div>
+      <div class="txt" ${ce('slides.'+i+'.items.'+ii)}>${esc(t)}</div>
+    </div>`).join('');
+  return `<div class="list-grid ${sl.cols===2?'cols-2':''} ${sl.big?'big':''}">${items}</div>`;
+}
+function pad(n){ return n<10?('0'+n):(''+n); }
+
+function tableHTML(tbl, pathPrefix, opts={}){
+  const compact = opts.compact?' compact':'';
+  let thead='';
+  (tbl.head||[]).forEach((row,ri)=>{
+    thead += '<tr>'+row.map((c,ci)=>{
+      const cs=c.cs?` colspan="${c.cs}"`:''; const rs=c.rs?` rowspan="${c.rs}"`:'';
+      const g2=c.g2?' g2':'';
+      return `<th class="hc${g2}"${cs}${rs} ${ce(pathPrefix+'.head.'+ri+'.'+ci+'.t')}>${esc(c.t)}</th>`;
+    }).join('')+'</tr>';
+  });
+  let tbody='';
+  (tbl.rows||[]).forEach((r,ri)=>{
+    const isTotal = opts.totalRow && (ri===tbl.rows.length-1) && !opts.noTotalHighlight;
+    tbody += `<tr class="${isTotal?'total':''}" style="--i:${ri}">`+r.map((v,ci)=>
+      `<td ${ce(pathPrefix+'.rows.'+ri+'.'+ci)}>${esc(v)}</td>`).join('')+'</tr>';
+  });
+  return `<table class="data${compact}"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+}
+
+function renderTableSlide(sl,i){
+  const cap = sl.caption?`<div class="tbl-cap" ${ce('slides.'+i+'.caption')}>${esc(sl.caption)}</div>`:'';
+  const hasChart = !!sl.chart;
+  const tbl = tableHTML(sl,'slides.'+i,{compact:sl.compact,totalRow:sl.totalRow});
+  if(hasChart){
+    return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:26px;height:100%">
+      <div class="tbl-scroll">${cap}${tbl}</div>
+      <div class="chart-box">${chartBoxHTML(i,sl)}</div>
+    </div>`;
+  }
+  return `<div class="tbl-scroll">${cap}${tbl}</div>`;
+}
+
+function renderTwoTable(sl,i){
+  const t = sl.tables.map((tb,ti)=>`<div style="--i:${ti}">${tableHTML(tb,'slides.'+i+'.tables.'+ti,{})}</div>`).join('');
+  return `<div class="two-tbl">${t}</div>`;
+}
+
+function renderChartSlide(sl,i){
+  const sub = sl.chart.sub?`<div class="chart-sub" ${ce('slides.'+i+'.chart.sub')}>${esc(sl.chart.sub)}</div>`:'';
+  return `<div class="chart-box">${sub}${chartBoxHTML(i,sl)}</div>`;
+}
+
+const CHART_TYPES = [
+  ['bar','📊 बार'],['line','📈 रेखा'],['area','🏔 क्षेत्र'],
+  ['radar','🕸 रडार'],['doughnut','🍩 डोनट'],['pie','🥧 पाई'],['polarArea','🎯 पोलर']
+];
+function chartCtrlsHTML(i,c){
+  const t=c.type||'bar';
+  const opts=CHART_TYPES.map(([v,l])=>`<option value="${v}"${v===t?' selected':''}>${l}</option>`).join('');
+  const ck=(k)=> c[k]?' checked':'';
+  return `<div class="chart-ctrls" data-i="${i}">
+    <select data-cc="type" data-i="${i}" title="चार्ट प्रकार">${opts}</select>
+    <label title="स्ट्याक्ड"><input type="checkbox" data-cc="stacked" data-i="${i}"${ck('stacked')}>स्ट्याक</label>
+    <label title="तेर्सो बार"><input type="checkbox" data-cc="horizontal" data-i="${i}"${ck('horizontal')}>तेर्सो</label>
+    <label title="मान लेबल"><input type="checkbox" data-cc="datalabels" data-i="${i}"${ck('datalabels')}>लेबल</label>
+  </div>`;
+}
+function chartBoxHTML(i,sl){
+  const canId='chart_'+i;
+  return `
+    ${chartCtrlsHTML(i,sl.chart)}
+    <button class="tb-btn mini-toggle" data-datatoggle="${i}" style="background:var(--navy)">✎ डाटा</button>
+    <div class="chart-canvas-wrap"><canvas id="${canId}"></canvas>
+      <div class="chart-fallback" id="fb_${i}" style="display:none"></div>
+    </div>
+    <div class="data-editor" id="de_${i}">${dataEditorHTML(i,sl.chart)}</div>`;
+}
+
+function dataEditorHTML(i,chart){
+  let h='<table><thead><tr><th></th>'+chart.labels.map((l,li)=>
+    `<th><input data-de="${i}" data-kind="label" data-li="${li}" value="${esc(l)}"></th>`).join('')+'</tr></thead><tbody>';
+  chart.datasets.forEach((ds,di)=>{
+    h+='<tr><td class="lblcell"><input data-de="${i}" data-kind="dslabel" data-di="'+di+'" value="'+esc(ds.label)+'"></td>'+
+      ds.data.map((v,vi)=>`<td><input data-de="${i}" data-kind="val" data-di="${di}" data-vi="${vi}" value="${esc(v)}"></td>`).join('')+'</tr>';
+  });
+  h+='</tbody></table>';
+  return h.replace(/data-de="\$\{i\}"/g,'data-de="'+i+'"');
+}
+
+// register the datalabels plugin once, but keep it OFF by default (opt-in per chart)
+let DL_REGISTERED=false;
+function ensureDatalabels(){
+  if(!DL_REGISTERED && typeof Chart!=='undefined' && window.ChartDataLabels){
+    Chart.register(window.ChartDataLabels); Chart.defaults.set('plugins.datalabels',{display:false});
+    DL_REGISTERED=true;
+  }
+}
+// vertical gradient fill built lazily once Chart.js has laid out the plot area
+function vGradient(ctx,area,hex,a1,a2){
+  const g=ctx.createLinearGradient(0,area.top,0,area.bottom);
+  g.addColorStop(0,hexA(hex,a1)); g.addColorStop(1,hexA(hex,a2)); return g;
+}
+
+function buildChart(i,sl){
+  if(chartInstances[i]) return;
+  ensureDatalabels();
+  const c = sl.chart; const canvas = document.getElementById('chart_'+i);
+  if(!canvas) return;
+  if(typeof Chart==='undefined'){
+    const fb=document.getElementById('fb_'+i);
+    if(fb){ fb.style.display='block'; fb.innerHTML = fallbackTable(c); canvas.style.display='none'; }
+    return;
+  }
+  const baseType = c.type||'bar';
+  const pieLike  = ['doughnut','pie','polarArea'].includes(baseType);
+  const isRadial = pieLike || baseType==='radar';
+  const renderType = baseType==='area' ? 'line' : baseType;   // area = filled line
+  const horizontal = !!c.horizontal && !isRadial;
+  const stacked = !!c.stacked && !isRadial;
+  const singlePie = pieLike && c.datasets.length===1;
+
+  const datasets = c.datasets.map((ds,di)=>{
+    const col = PALETTE[di%PALETTE.length];
+    const dsType = ds.type;                       // per-dataset override => mixed charts
+    const asLine = (dsType||renderType)==='line';
+    const filled = baseType==='area' || ds.fill===true;
+    const base = {
+      label: ds.label, data: ds.data.map(Number), type: dsType||undefined,
+      borderColor: singlePie ? '#fff' : col,
+      borderWidth: singlePie ? 2 : (asLine?3:1.5),
+      tension:.35, pointRadius: asLine?3:0, pointHoverRadius:6, pointBackgroundColor:col,
+      borderRadius: (dsType||renderType)==='bar'?6:0, borderSkipped:false,
+      fill: isRadial ? (baseType==='radar') : (asLine ? filled : true),
+      backgroundColor:(context)=>{
+        const {ctx,chartArea}=context.chart;
+        if(pieLike) return singlePie ? c.labels.map((_,k)=>hexA(PALETTE[k%PALETTE.length],.85)) : hexA(col,.55);
+        if(baseType==='radar') return hexA(col,.18);
+        if(!chartArea) return hexA(col, asLine?.15:.7);
+        return asLine ? vGradient(ctx,chartArea,col,.38,0) : vGradient(ctx,chartArea,col,.95,.5);
+      }
+    };
+    if(c.dualAxis && ds.axis==='y1' && !isRadial) base.yAxisID='y1';
+    return base;
+  });
+
+  const options = { responsive:true, maintainAspectRatio:false,
+    animation:{duration:900, easing:'easeOutQuart'},
+    interaction: isRadial?{mode:'nearest'}:{mode:'index',intersect:false},
+    plugins:{
+      legend:{ position: isRadial?'right':'top', labels:{font:{size:12},boxWidth:14,usePointStyle:true} },
+      tooltip:{ callbacks:{ label:ctx=>{
+        const v = ctx.parsed?.y ?? ctx.parsed?.r ?? ctx.parsed;
+        return (ctx.dataset.label?ctx.dataset.label+': ':'')+Number(v).toLocaleString();
+      }}},
+      datalabels: c.datalabels ? {
+        display: (ctx)=> pieLike ? true : ctx.dataset.data[ctx.dataIndex] > 0,
+        color: pieLike?'#fff':'#1b1b52', font:{size:10,weight:'700'},
+        anchor: pieLike?'center':'end', align: pieLike?'center':'end',
+        formatter:v=>fmt(v)
+      } : {display:false}
+    }
+  };
+  if(!isRadial){
+    options.indexAxis = horizontal?'y':'x';
+    options.scales = {
+      x:{ stacked, ticks:{font:{size:11}}, grid:{color:'rgba(20,20,60,.06)'} },
+      y:{ stacked, beginAtZero:true, ticks:{font:{size:11},callback:v=>fmt(v)}, grid:{color:'rgba(20,20,60,.06)'} }
+    };
+    if(c.dualAxis){
+      options.scales.y.position='left'; options.scales.y.title={display:true,text:'अन्य'};
+      options.scales.y1={ position:'right', beginAtZero:true, grid:{drawOnChartArea:false},
+        ticks:{font:{size:11},callback:v=>fmt(v)}, title:{display:true,text:'मुख्य'} };
+    }
+  } else if(baseType==='radar'){
+    options.scales={ r:{ ticks:{callback:v=>fmt(v),backdropColor:'transparent',font:{size:9}}, pointLabels:{font:{size:11}} } };
+  }
+
+  chartInstances[i] = new Chart(canvas.getContext('2d'), {
+    type: renderType,
+    data:{ labels:c.labels.slice(), datasets },
+    options
+  });
+}
+function fallbackTable(c){
+  let h='<table class="data compact"><thead><tr><th>—</th>'+c.labels.map(l=>`<th>${esc(l)}</th>`).join('')+'</tr></thead><tbody>';
+  c.datasets.forEach(ds=>{ h+='<tr><td>'+esc(ds.label)+'</td>'+ds.data.map(v=>`<td>${esc(v)}</td>`).join('')+'</tr>'; });
+  return h+'</tbody></table><p style="color:#888">(चार्ट लोड हुन इन्टरनेट चाहिन्छ — डाटा माथि देखाइएको छ)</p>';
+}
+function hexA(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+function fmt(v){ v=Number(v); if(Math.abs(v)>=1e6) return (v/1e6).toFixed(1)+'M'; if(Math.abs(v)>=1e3) return (v/1e3).toFixed(0)+'K'; return v; }
+
+/* ---------- Fit / scale ---------- */
+function fit(){
+  const wrap=document.getElementById('stageWrap');
+  const pad=32;
+  const sw=wrap.clientWidth-pad, sh=wrap.clientHeight-pad;
+  const scale=Math.min(sw/1280, sh/720);
+  stage.style.transform='scale('+scale+')';
+}
+window.addEventListener('resize', fit);
+
+/* ---------- Navigation ---------- */
+function show(idx){
+  cur=Math.max(0,Math.min(DECK.slides.length-1,idx));
+  [...stage.children].forEach((el,i)=> el.classList.toggle('active', i===cur));
+  ensureChart(cur);
+  updateArrows();
+  animateSlide(cur);
+}
+function updateArrows(){
+  document.getElementById('prev').style.visibility = cur>0?'visible':'hidden';
+  document.getElementById('next').style.visibility = cur<DECK.slides.length-1?'visible':'hidden';
+}
+document.getElementById('prev').onclick=()=>show(cur-1);
+document.getElementById('next').onclick=()=>show(cur+1);
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); saveAllToDB(); return; }
+  if(e.target.matches('[contenteditable="true"],input,textarea')) return;
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();show(cur+1);}
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();show(cur-1);}
+  else if(e.key==='Home'){show(0);} else if(e.key==='End'){show(DECK.slides.length-1);}
+  else if(e.key.toLowerCase()==='o'){toggleOverview();}
+  else if(e.key.toLowerCase()==='e'){toggleEdit();}
+  else if(e.key==='Escape'){document.getElementById('overview').classList.remove('show');}
+});
+
+/* ---------- Editing ---------- */
+function applyEditing(){
+  document.querySelectorAll('[data-edit]').forEach(el=>{
+    el.setAttribute('contenteditable', editing?'true':'false');
+  });
+  document.body.classList.toggle('editing', editing);
+}
+function toggleEdit(){
+  editing=!editing;
+  document.getElementById('btnEdit').classList.toggle('active',editing);
+  document.getElementById('editTools').style.display=editing?'flex':'none';
+  applyEditing();
+  toast(editing?'सम्पादन मोड चालु — कुनै पनि टेक्स्टमा क्लिक गरी परिवर्तन गर्नुहोस्':'सम्पादन मोड बन्द');
+}
+document.getElementById('btnEdit').onclick=toggleEdit;
+
+// text edits -> model
+stage.addEventListener('input', e=>{
+  const el=e.target.closest('[data-edit]'); if(!el) return;
+  setByPath(DECK, el.dataset.edit, coerce(el.textContent, el.dataset.edit));
+  markDirty(el.dataset.edit);
+  scheduleSave();
+});
+// chart data editor
+stage.addEventListener('input', e=>{
+  const inp=e.target.closest('input[data-de]'); if(!inp) return;
+  const i=+inp.dataset.de; const chart=DECK.slides[i].chart;
+  const kind=inp.dataset.kind;
+  if(kind==='label') chart.labels[+inp.dataset.li]=inp.value;
+  else if(kind==='dslabel') chart.datasets[+inp.dataset.di].label=inp.value;
+  else if(kind==='val') chart.datasets[+inp.dataset.di].data[+inp.dataset.vi]=parseFloat(inp.value)||0;
+  // live update chart
+  const ci=chartInstances[i];
+  if(ci){ ci.data.labels=chart.labels.slice();
+    chart.datasets.forEach((ds,di)=>{ if(ci.data.datasets[di]){ci.data.datasets[di].label=ds.label; ci.data.datasets[di].data=ds.data.map(Number);}});
+    ci.update();
+  }
+  dirty.slides.add(i);
+  scheduleSave();
+});
+stage.addEventListener('click', e=>{
+  const b=e.target.closest('[data-datatoggle]'); if(!b) return;
+  document.getElementById('de_'+b.dataset.datatoggle).classList.toggle('show');
+});
+// chart type / options controls -> update config + rebuild chart
+stage.addEventListener('change', e=>{
+  const el=e.target.closest('[data-cc]'); if(!el) return;
+  const i=+el.dataset.i; const chart=DECK.slides[i] && DECK.slides[i].chart; if(!chart) return;
+  const key=el.dataset.cc;
+  chart[key] = (el.type==='checkbox') ? el.checked : el.value;
+  if(chartInstances[i]){ try{chartInstances[i].destroy()}catch(_){} delete chartInstances[i]; }
+  buildChart(i,DECK.slides[i]);
+  dirty.slides.add(i); scheduleSave();
+});
+
+function coerce(text, path){
+  const t=text.trim();
+  // keep numeric cells numeric where original was number
+  const orig = getByPath(ORIGINAL_DECK, path);
+  if(typeof orig==='number' && t!=='' && !isNaN(t.replace(/,/g,''))) return parseFloat(t.replace(/,/g,''));
+  return text;
+}
+function getByPath(o,p){ return p.split('.').reduce((a,k)=> a==null?a:a[k], o); }
+function setByPath(o,p,v){ const ks=p.split('.'); let x=o; for(let i=0;i<ks.length-1;i++) x=x[ks[i]]; x[ks[ks.length-1]]=v; }
+
+let saveT=null;
+function scheduleSave(){ clearTimeout(saveT); saveT=setTimeout(flushSave,450); setSaveUI('unsaved'); }
+
+// Reflect save status on the toolbar button: 'saved' | 'unsaved' | 'saving'.
+function setSaveUI(state){
+  const b=document.getElementById('btnSaveDb'); if(!b) return;
+  b.classList.toggle('unsaved', state==='unsaved');
+  b.classList.toggle('saving', state==='saving');
+  if(state==='saving') b.textContent='⏳ सेभ हुँदै…';
+  else if(state==='unsaved') b.textContent='🗄 सेभ गर्नुहोस् •';
+  else b.textContent='✔ सेभ भयो';
+}
+
+// Persist any pending edits immediately. Awaited before every structural
+// change (add/duplicate/delete/move) and deck reload, so a debounced text or
+// chart edit is never clobbered by the deck being re-fetched from the server.
+async function flushSave(){
+  clearTimeout(saveT); saveT=null;
+  if(!SERVER){ save(); setSaveUI('saved'); return; }
+  if(!dirty.meta && dirty.slides.size===0){ setSaveUI('saved'); return; }
+  const jobs=[];
+  if(dirty.meta){ dirty.meta=false; jobs.push(api('PUT','/api/meta',DECK.meta)); }
+  const idx=[...dirty.slides]; dirty.slides.clear();
+  for(const i of idx){
+    const sl=DECK.slides[i];
+    if(sl && sl._id!=null) jobs.push(api('PUT','/api/slides/'+sl._id, slidePayload(sl)));
+  }
+  try{ await Promise.all(jobs); setSaveUI('saved'); }
+  catch(e){ toast('⚠ सर्भरमा सेभ हुन सकेन'); setSaveUI('unsaved'); }
+}
+
+// Explicit "Save to database" action: force-commits the whole current deck
+// (all slides + meta), independent of the debounced autosave.
+async function saveAllToDB(){
+  const b=document.getElementById('btnSaveDb');
+  if(b && b.classList.contains('saving')) return;      // avoid double clicks
+  if(!SERVER){ save(); setSaveUI('saved'); toast('✔ सेभ भयो (अफलाइन — यसै ब्राउजरमा)'); return; }
+  setSaveUI('saving');
+  try{
+    clearTimeout(saveT); saveT=null;
+    // one atomic request saves the whole deck (meta + all slides, in order).
+    // Send slides WITH their _id so the server upserts by id (preserves ids)
+    // instead of deleting + recreating everything.
+    const fresh = await api('PUT','/api/deck', {meta:DECK.meta, slides:DECK.slides});
+    // sync ids back (same order) without a disruptive re-render/animation replay
+    fresh.slides.forEach((s,i)=>{ if(DECK.slides[i]) DECK.slides[i]._id = s._id; });
+    dirty.meta=false; dirty.slides.clear();
+    setSaveUI('saved'); toast('✔ डाटाबेसमा सेभ भयो ('+DECK.slides.length+' स्लाइड)');
+  }catch(e){ setSaveUI('unsaved'); toast('⚠ डाटाबेसमा सेभ हुन सकेन'); }
+}
+document.getElementById('btnSaveDb').onclick=saveAllToDB;
+
+// Last-ditch save when the page is hidden/closed/reloaded within the debounce
+// window; keepalive lets these requests outlive the page.
+function flushOnExit(){
+  if(!SERVER){ save(); return; }
+  const send=(url,body)=>fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body), keepalive:true}).catch(()=>{});
+  if(dirty.meta) send('/api/meta',DECK.meta);
+  for(const i of dirty.slides){ const sl=DECK.slides[i]; if(sl && sl._id!=null) send('/api/slides/'+sl._id, slidePayload(sl)); }
+}
+window.addEventListener('pagehide', flushOnExit);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushOnExit(); });
+
+/* slide ops (server-aware; falls back to localStorage when offline) */
+async function persistOrder(){
+  if(SERVER) await api('POST','/api/slides/reorder',{order:DECK.slides.map(s=>s._id)});
+  else save();
+}
+document.getElementById('btnAdd').onclick=async ()=>{
+  await flushSave();
+  const s={type:'list',title:'नयाँ स्लाइड',cols:1,big:true,items:['नयाँ बुँदा']};
+  if(SERVER){ await api('POST','/api/slides',{after:DECK.slides[cur]?._id ?? null, slide:s}); await reloadDeck(); show(Math.min(cur+1,DECK.slides.length-1)); }
+  else { DECK.slides.splice(cur+1,0,s); save(); render(); show(cur+1); }
+  toast('स्लाइड थपियो');
+};
+document.getElementById('btnDup').onclick=async ()=>{
+  await flushSave();
+  if(SERVER){ const id=DECK.slides[cur]?._id; if(id==null) return; await api('POST','/api/slides/'+id+'/duplicate'); await reloadDeck(); show(cur+1); }
+  else { DECK.slides.splice(cur+1,0,structuredClone(DECK.slides[cur])); save(); render(); show(cur+1); }
+  toast('स्लाइड कपी भयो');
+};
+document.getElementById('btnDel').onclick=async ()=>{
+  if(DECK.slides.length<=1) return;
+  if(!confirm('यो स्लाइड हटाउने?')) return;
+  await flushSave();
+  if(SERVER){ const id=DECK.slides[cur]?._id; await api('DELETE','/api/slides/'+id); await reloadDeck(); if(cur>=DECK.slides.length) cur=DECK.slides.length-1; show(cur); }
+  else { DECK.slides.splice(cur,1); if(cur>=DECK.slides.length) cur=DECK.slides.length-1; save(); render(); show(cur); }
+  toast('स्लाइड हटाइयो');
+};
+document.getElementById('btnMoveL').onclick=async ()=>{ if(cur===0)return; await flushSave(); [DECK.slides[cur-1],DECK.slides[cur]]=[DECK.slides[cur],DECK.slides[cur-1]]; await persistOrder(); render(); show(cur-1); };
+document.getElementById('btnMoveR').onclick=async ()=>{ if(cur===DECK.slides.length-1)return; await flushSave(); [DECK.slides[cur+1],DECK.slides[cur]]=[DECK.slides[cur],DECK.slides[cur+1]]; await persistOrder(); render(); show(cur+1); };
+
+/* ---------- Overview ---------- */
+function toggleOverview(){ const ov=document.getElementById('overview'); ov.classList.toggle('show'); if(ov.classList.contains('show')) buildOverview(); }
+document.getElementById('btnOverview').onclick=toggleOverview;
+function buildOverview(){
+  const g=document.getElementById('ovGrid'); g.innerHTML='';
+  DECK.slides.forEach((sl,i)=>{
+    const title = sl.title || (sl.type==='title'?DECK.meta.reportTitle:(sl.type==='thanks'?sl.text:'—'));
+    const card=document.createElement('div'); card.className='ov-card';
+    card.innerHTML=`<div class="ov-thumb"><span class="n">${i+1}</span><span class="tt">${esc(title)}</span></div>
+      <div class="meta"><span>${typeLabel(sl.type)}</span><span>#${i+1}</span></div>`;
+    card.onclick=()=>{ show(i); document.getElementById('overview').classList.remove('show'); };
+    g.appendChild(card);
+  });
+}
+function typeLabel(t){ return {title:'शीर्षक',intro:'परिचय',list:'सूची',table:'तालिका',twotable:'तालिका',chart:'चार्ट',thanks:'धन्यवाद'}[t]||t; }
+
+/* ---------- Fullscreen ---------- */
+const toggleFull=()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
+document.getElementById('btnFull').onclick=toggleFull;
+document.getElementById('fsFloat').onclick=toggleFull;
+// re-fit the stage when the toolbar shows/hides on fullscreen toggle
+document.addEventListener('fullscreenchange', ()=>setTimeout(fit,60));
+document.addEventListener('webkitfullscreenchange', ()=>setTimeout(fit,60));
+
+/* ---------- Export / Import / Save HTML / Print / Reset ---------- */
+// strip server-only ids so the exported/baked deck is clean JSON
+function cleanDeck(){ return JSON.parse(JSON.stringify(DECK, (k,v)=> k==='_id'?undefined:v)); }
+document.getElementById('btnExport').onclick=()=>{
+  downloadBlob(JSON.stringify(cleanDeck(),null,2),'presentation-data.json','application/json'); toast('JSON निर्यात भयो');
+};
+document.getElementById('btnImport').onclick=()=>document.getElementById('fileInput').click();
+document.getElementById('fileInput').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=async ()=>{ try{
+    const data=JSON.parse(r.result);
+    if(SERVER){ await api('POST','/api/import',data); await reloadDeck(); }
+    else { DECK=data; save(); render(); }
+    cur=0; show(0); toast('आयात सफल');
+  }catch(err){ alert('अमान्य JSON फाइल'); } };
+  r.readAsText(f); e.target.value='';
+};
+document.getElementById('btnSaveHtml').onclick=()=>{
+  // embed the current deck as the new original so the exported stand-alone file
+  // opens with edits baked in even without the backend. The `exported` class
+  // hides the toolbar and lets the stage use the whole screen in the saved file.
+  document.documentElement.classList.add('exported');
+  const html=document.documentElement.outerHTML.replace(
+    /const ORIGINAL_DECK = \{[\s\S]*?\n  \]\n\};/,
+    'const ORIGINAL_DECK = '+JSON.stringify(cleanDeck())+';'
+  ).replace(/const LS_KEY = 'annualReviewDeck_v1';/, "const LS_KEY = 'annualReviewDeck_export_"+Date.now()+"';");
+  document.documentElement.classList.remove('exported');
+  downloadBlob('<!DOCTYPE html>\n'+html,'presentation.html','text/html');
+  toast('HTML फाइल डाउनलोड भयो');
+};
+document.getElementById('btnPrint').onclick=()=>{
+  // ensure every chart is rendered so it appears in the printed PDF
+  DECK.slides.forEach((sl,i)=>{ if(sl.chart) buildChart(i,sl); });
+  setTimeout(()=>window.print(), 400);
+};
+document.getElementById('btnReset').onclick=async ()=>{
+  if(!confirm('मूल सामग्रीमा फर्काउने? सबै परिवर्तन हट्नेछन्।')) return;
+  if(SERVER){ await api('POST','/api/reset'); await reloadDeck(); }
+  else { DECK=structuredClone(ORIGINAL_DECK); save(); render(); }
+  cur=0; show(0); toast('रिसेट भयो');
+};
+function downloadBlob(content,name,type){
+  const b=new Blob([content],{type}); const u=URL.createObjectURL(b);
+  const a=document.createElement('a'); a.href=u; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1000);
+}
+
+/* ---------- Toast ---------- */
+let toastT; function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ---------- init ---------- */
+bootstrap();
+window.addEventListener('load', fit);
+setTimeout(fit,300);
+</script>
+</body>
+</html>
