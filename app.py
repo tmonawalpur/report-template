@@ -17,6 +17,8 @@ Slide  : one row per slide, ordered by `position`. Slide-type specific
          JSON blob in `content`, which keeps the schema flexible while the
          core fields (position / type / title) stay first-class columns.
 """
+import base64
+import binascii
 import json
 import os
 
@@ -39,7 +41,7 @@ db = SQLAlchemy(app)
 # --------------------------------------------------------------------------- #
 #  Models
 # --------------------------------------------------------------------------- #
-META_FIELDS = ["province", "ministry", "office", "officeFull", "fy", "reportTitle"]
+META_FIELDS = ["province", "ministry", "office", "officeFull", "fy", "reportTitle", "theme"]
 
 
 class Meta(db.Model):
@@ -52,6 +54,7 @@ class Meta(db.Model):
     officeFull = db.Column(db.Text, default="")
     fy = db.Column(db.Text, default="")
     reportTitle = db.Column(db.Text, default="")
+    theme = db.Column(db.Text, default="classic")
 
     def to_dict(self):
         return {k: (getattr(self, k) or "") for k in META_FIELDS}
@@ -92,6 +95,29 @@ class Slide(db.Model):
         if self.title:
             d["title"] = self.title
         return d
+
+
+class Image(db.Model):
+    """An uploaded image, stored as a BLOB so the deck is self-contained."""
+    __tablename__ = "images"
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.Text, default="")
+    mimetype = db.Column(db.String(80), default="image/png")
+    data = db.Column(db.LargeBinary, nullable=False)
+    created = db.Column(db.DateTime, server_default=func.now())
+
+    def url(self):
+        return "/api/images/%d" % self.id
+
+    def meta_dict(self):
+        return {
+            "id": self.id,
+            "url": self.url(),
+            "filename": self.filename or "",
+            "mimetype": self.mimetype or "",
+            "size": len(self.data or b""),
+            "created": self.created.isoformat() if self.created else None,
+        }
 
 
 # --------------------------------------------------------------------------- #
@@ -268,14 +294,85 @@ def api_reset():
 
 
 # --------------------------------------------------------------------------- #
+#  Routes — Images
+# --------------------------------------------------------------------------- #
+@app.get("/api/images")
+def api_list_images():
+    imgs = Image.query.order_by(Image.id.desc()).all()
+    return jsonify([im.meta_dict() for im in imgs])
+
+
+@app.post("/api/images")
+def api_upload_image():
+    """Accepts either multipart form (field 'file') or JSON {filename, mimetype,
+    data} where `data` is base64 (optionally a full data: URL)."""
+    filename, mimetype, raw = "", "image/png", None
+    if request.files.get("file"):
+        f = request.files["file"]
+        filename = f.filename or "upload"
+        mimetype = f.mimetype or mimetype
+        raw = f.read()
+    else:
+        body = request.get_json(silent=True) or {}
+        filename = body.get("filename") or "upload"
+        mimetype = body.get("mimetype") or mimetype
+        b64 = body.get("data") or ""
+        if "," in b64 and b64.strip().startswith("data:"):
+            head, b64 = b64.split(",", 1)
+            if ";" in head and ":" in head:
+                mimetype = head.split(":", 1)[1].split(";", 1)[0] or mimetype
+        try:
+            raw = base64.b64decode(b64)
+        except (ValueError, binascii.Error):
+            raw = None
+    if not raw:
+        abort(400, "no image data")
+    im = Image(filename=filename, mimetype=mimetype, data=raw)
+    db.session.add(im)
+    db.session.commit()
+    return jsonify(im.meta_dict()), 201
+
+
+@app.get("/api/images/<int:iid>")
+def api_get_image(iid):
+    im = db.session.get(Image, iid) or abort(404)
+    return app.response_class(im.data, mimetype=im.mimetype or "image/png")
+
+
+@app.delete("/api/images/<int:iid>")
+def api_delete_image(iid):
+    im = db.session.get(Image, iid)
+    if im:
+        db.session.delete(im)
+        db.session.commit()
+    return ("", 204)
+
+
+# --------------------------------------------------------------------------- #
 #  Bootstrap
 # --------------------------------------------------------------------------- #
+def _migrate():
+    """Add columns introduced after the DB was first created (SQLite only)."""
+    from sqlalchemy import text, inspect
+    insp = inspect(db.engine)
+    cols = {c["name"] for c in insp.get_columns("meta")}
+    if "theme" not in cols:
+        db.session.execute(text("ALTER TABLE meta ADD COLUMN theme TEXT DEFAULT 'classic'"))
+        db.session.commit()
+
+
 with app.app_context():
     db.create_all()
+    _migrate()
     seed_if_empty()
 
 
 if __name__ == "__main__":
+    # Port: first CLI arg, else $PORT, else 5000. (On recent macOS, port 5000
+    # is taken by the AirPlay Receiver / Control Center, so the dev server
+    # defaults to another port via launch.json.)
+    import sys
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 5000))
     # use_reloader=False: the auto-reloader spawns a child process on every
     # file change, which can leave orphaned servers bound to the port.
-    app.run(host="127.0.0.1", port=5000, debug=True, use_reloader=False)
+    app.run(host="127.0.0.1", port=port, debug=True, use_reloader=False)

@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <style>
 :root{
   --navy:#1b1b52; --navy2:#2b2b74; --green:#1e5b45; --green2:#22795b;
@@ -17,6 +18,17 @@
   --c0:#2f6bff; --c1:#ec4899; --c2:#38bdf8; --c3:#a855f7; --c4:#f59e0b; --c5:#10b981;
   --stageW:1280px; --stageH:720px;
 }
+/* ---------- Presentation templates (themes) ---------- */
+html[data-theme="classic"]{ --navy:#1b1b52; --navy2:#2b2b74; --green:#1e5b45; --green2:#22795b;
+  --red:#b01e39; --ink:#16162e; --muted:#5b5b74; --line:#d8d8e4; --bg:#eef0f6; }
+html[data-theme="ocean"]{ --navy:#0b3d62; --navy2:#1565a0; --green:#0f766e; --green2:#14a097;
+  --red:#e05a2b; --ink:#0c2434; --muted:#4a647a; --line:#cfe0ec; --bg:#e7f0f7; }
+html[data-theme="emerald"]{ --navy:#14532d; --navy2:#2f7a43; --green:#047857; --green2:#10b981;
+  --red:#b45309; --ink:#12241a; --muted:#4b6555; --line:#cfe6d8; --bg:#eaf4ee; }
+html[data-theme="royal"]{ --navy:#3b0a63; --navy2:#6d28d9; --green:#7c3aed; --green2:#9d5cf5;
+  --red:#be185d; --ink:#1f1033; --muted:#6b5b7e; --line:#e2d6f0; --bg:#f2ecfa; }
+html[data-theme="slate"]{ --navy:#1f2937; --navy2:#374151; --green:#0e7490; --green2:#1296b8;
+  --red:#b91c1c; --ink:#111827; --muted:#52606d; --line:#d7dce3; --bg:#eef1f5; }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{
@@ -146,11 +158,131 @@ table.data.compact th, table.data.compact td{padding:5px 7px}
 .tbl-scroll{max-height:100%; overflow:auto}
 .two-tbl{display:grid; grid-template-columns:1fr; gap:22px}
 
+/* ---------- Photo slide (full-bleed image + title/description) ---------- */
+.photo-slide{position:absolute; inset:0; background:#0c0c18}
+.photo-full{width:100%; height:100%; object-fit:cover; display:block}
+.photo-empty{width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,#e7e9f2,#cfd4e6); color:#6b7280; font-size:22px; font-weight:600}
+.photo-caption{position:absolute; left:0; right:0; bottom:0; z-index:2; padding:30px 48px 34px;
+  background:linear-gradient(0deg,rgba(0,0,0,.78),rgba(0,0,0,.25) 65%,transparent); color:#fff}
+.photo-title{font-size:40px; font-weight:800; line-height:1.15}
+.photo-desc{font-size:21px; line-height:1.45; margin-top:8px; opacity:.95; max-width:80%}
+.photo-upload{position:absolute; top:14px; right:14px; z-index:5; display:none;
+  border:none; border-radius:9px; cursor:pointer; padding:9px 14px; font-weight:700; font-size:14px;
+  background:rgba(20,20,46,.82); color:#fff; backdrop-filter:blur(4px)}
+.photo-upload:hover{background:rgba(20,20,46,.95)}
+body.editing .photo-upload{display:inline-flex}
+/* upload affordance over the intro photo */
+.intro-photo .photo-upload{top:10px; right:10px}
+.exported .photo-upload{display:none!important}
+
 /* ---------- Chart ---------- */
 .chart-box{position:relative; height:100%; width:100%}
 .chart-sub{text-align:center; color:var(--navy); font-weight:700; font-size:17px; margin-bottom:6px}
 .chart-canvas-wrap{position:relative; height:calc(100% - 30px)}
 .chart-fallback{font-size:14px}
+
+/* =====================================================================
+   TEMPLATE DESIGNS — each data-theme is a distinct layout, not just colors.
+   The slide markup is fixed; these rules re-place and re-style the art.
+   ===================================================================== */
+
+/* ---------- OCEAN · "Banner" — full-width header bands, wave title ---------- */
+html[data-theme="ocean"] .title-slide{background:linear-gradient(180deg,#fff,#eaf3fa)}
+html[data-theme="ocean"] .title-slide .chevrons{top:auto; width:100%; height:38%;
+  clip-path:polygon(0 42%,100% 0,100% 100%,0 100%)}
+html[data-theme="ocean"] .title-inner{max-width:100%; padding:58px 70px; justify-content:flex-start}
+html[data-theme="ocean"] .crest{height:70px;width:70px}
+html[data-theme="ocean"] .t-main{font-size:56px}
+html[data-theme="ocean"] .t-fy{border-radius:30px}
+html[data-theme="ocean"] .deco-corner{display:none}
+html[data-theme="ocean"] .slide-head{padding:0; margin-bottom:10px}
+html[data-theme="ocean"] .slide-head{background:linear-gradient(100deg,var(--navy),var(--navy2));
+  padding:18px 54px 16px; border-radius:0}
+html[data-theme="ocean"] .office-tag{color:#bfe0f2; font-size:14px}
+html[data-theme="ocean"] .slide-title{color:#fff}
+html[data-theme="ocean"] .slide-body{padding-top:16px}
+html[data-theme="ocean"] table.data{border-radius:12px; overflow:hidden; border:none}
+html[data-theme="ocean"] table.data th,html[data-theme="ocean"] table.data td{border:none; border-bottom:1px solid #e2ecf4}
+html[data-theme="ocean"] table.data thead th{background:linear-gradient(100deg,var(--navy),var(--navy2))}
+html[data-theme="ocean"] .badge{border-radius:12px}
+html[data-theme="ocean"] .tbl-cap{border-radius:30px}
+html[data-theme="ocean"] .slide-foot .bar{clip-path:none; width:100%;
+  background:linear-gradient(90deg,var(--navy),var(--navy2) 60%,transparent)}
+html[data-theme="ocean"] .slide-foot .fname{color:#fff}
+
+/* ---------- EMERALD · "Editorial" — serif, minimal, hairline rules ---------- */
+html[data-theme="emerald"] .slide-title,
+html[data-theme="emerald"] .t-main,html[data-theme="emerald"] .t-office,
+html[data-theme="emerald"] .tbl-cap{font-family:Georgia,"Times New Roman",serif}
+html[data-theme="emerald"] .title-slide{background:#fff}
+html[data-theme="emerald"] .title-slide .chevrons{display:none}
+html[data-theme="emerald"] .title-inner{max-width:100%; align-items:center; text-align:center;
+  padding:70px 90px}
+html[data-theme="emerald"] .crest{margin:0 auto 14px}
+html[data-theme="emerald"] .t-prov,html[data-theme="emerald"] .t-min{letter-spacing:.5px; text-transform:uppercase; font-size:16px}
+html[data-theme="emerald"] .t-main{font-size:54px; border-top:3px double var(--green);
+  border-bottom:3px double var(--green); padding:16px 0; margin-top:18px}
+html[data-theme="emerald"] .t-fy{background:none; color:var(--green); border:1px solid var(--green)}
+html[data-theme="emerald"] .deco-corner{display:none}
+html[data-theme="emerald"] .slide-head{border-left:5px solid var(--green); padding-left:22px; margin:22px 54px 0}
+html[data-theme="emerald"] .office-tag{text-transform:uppercase; letter-spacing:.6px; font-size:13px; color:var(--muted)}
+html[data-theme="emerald"] table.data th,html[data-theme="emerald"] table.data td{border:none;
+  border-bottom:1px solid var(--line); text-align:left}
+html[data-theme="emerald"] table.data thead th{background:none; color:var(--green);
+  border-bottom:2px solid var(--green)}
+html[data-theme="emerald"] table.data tbody td:first-child,
+html[data-theme="emerald"] table.data tbody tr:nth-child(even) td{background:none}
+html[data-theme="emerald"] table.data tr.total td{background:none!important; color:var(--green);
+  border-top:2px solid var(--green); font-weight:800}
+html[data-theme="emerald"] .tbl-cap{background:none; color:var(--green); border-bottom:2px solid var(--green);
+  border-radius:0; padding:4px 0}
+html[data-theme="emerald"] .badge{background:none; color:var(--green); border:2px solid var(--green);
+  box-shadow:none}
+html[data-theme="emerald"] .slide-foot .bar{background:var(--green); clip-path:none; width:100%; height:3px}
+
+/* ---------- ROYAL · "Sidebar" — bold left spine, full-bleed title ---------- */
+html[data-theme="royal"] .title-slide{background:linear-gradient(135deg,var(--navy),var(--navy2))}
+html[data-theme="royal"] .title-slide .chevrons{width:100%; clip-path:none; opacity:.25;
+  background:radial-gradient(circle at 80% 20%,rgba(255,255,255,.3),transparent 45%)}
+html[data-theme="royal"] .title-inner{max-width:100%; align-items:center; text-align:center}
+html[data-theme="royal"] .crest{margin:0 auto 14px; background:#fff; border-radius:50%; padding:10px; height:88px; width:88px}
+html[data-theme="royal"] .t-prov,html[data-theme="royal"] .t-min{color:#f6d9e6}
+html[data-theme="royal"] .t-office,html[data-theme="royal"] .t-main{color:#fff}
+html[data-theme="royal"] .t-main{font-size:60px}
+html[data-theme="royal"] .t-fy{background:#fff; color:var(--navy)}
+html[data-theme="royal"] .deco-corner{top:0; right:auto; left:0; width:64px; height:100%;
+  background:linear-gradient(180deg,var(--navy),var(--navy2)); clip-path:none}
+html[data-theme="royal"] .deco-corner:after{display:none}
+html[data-theme="royal"] .slide-head{padding-left:96px}
+html[data-theme="royal"] .slide-body{padding-left:96px}
+html[data-theme="royal"] .slide-title{font-size:44px}
+html[data-theme="royal"] table.data thead th{background:var(--navy)}
+html[data-theme="royal"] table.data thead th.g2{background:var(--navy2)}
+html[data-theme="royal"] .badge{width:46px;height:46px; box-shadow:0 0 0 4px rgba(124,58,237,.18)}
+html[data-theme="royal"] .slide-foot{padding-left:72px}
+html[data-theme="royal"] .slide-foot .bar{display:none}
+
+/* ---------- SLATE · "Corporate" — top strip, boxed title, zebra ---------- */
+html[data-theme="slate"] .title-slide{background:#fff}
+html[data-theme="slate"] .title-slide .chevrons{width:100%; height:16%; top:0; clip-path:none;
+  background:linear-gradient(90deg,var(--navy),var(--green))}
+html[data-theme="slate"] .title-inner{max-width:100%; align-items:center; text-align:center;
+  justify-content:center}
+html[data-theme="slate"] .crest{margin:0 auto 12px}
+html[data-theme="slate"] .t-main{font-size:52px; border:2px solid var(--navy); padding:18px 34px;
+  border-radius:10px; margin-top:20px}
+html[data-theme="slate"] .deco-corner{width:100%; height:12px; clip-path:none;
+  background:linear-gradient(90deg,var(--navy),var(--green))}
+html[data-theme="slate"] .deco-corner:after{display:none}
+html[data-theme="slate"] .slide-head{padding-top:30px}
+html[data-theme="slate"] .slide-title{border-left:6px solid var(--green); padding-left:16px}
+html[data-theme="slate"] table.data th,html[data-theme="slate"] table.data td{border-color:#e3e7ee}
+html[data-theme="slate"] table.data thead th{background:var(--navy);
+  border-bottom:3px solid var(--green)}
+html[data-theme="slate"] table.data tbody tr:nth-child(even) td{background:#eef2f7}
+html[data-theme="slate"] .badge{border-radius:8px; background:linear-gradient(160deg,var(--navy),var(--green))}
+html[data-theme="slate"] .slide-foot .bar{background:linear-gradient(90deg,var(--navy),var(--green))}
 
 /* edit data grid for charts */
 .data-editor{position:absolute; right:8px; top:8px; z-index:6; background:#fff;
@@ -183,6 +315,43 @@ body.editing [data-edit]{outline:1px dashed rgba(43,43,116,.35); outline-offset:
 body.editing [data-edit]:hover{outline-color:var(--red)}
 [data-edit]:focus{outline:2px solid var(--red); background:rgba(176,30,57,.06)}
 body:not(.editing) [contenteditable]{cursor:default}
+
+/* ---------- Table column controls (edit mode) ---------- */
+tr.colctl-row th.colctl{background:#eef1ff; border:1px solid var(--line); padding:2px}
+.colctl-btns{display:flex; gap:2px; justify-content:center}
+.colctl-btns .cbtn{border:1px solid var(--line); background:#fff; color:var(--navy);
+  border-radius:4px; cursor:pointer; font-size:12px; line-height:1; padding:2px 4px}
+.colctl-btns .cbtn:hover{background:var(--navy); color:#fff}
+.colctl-btns .cbtn.danger:hover{background:var(--red)}
+.colctl-btns .cbtn:disabled{opacity:.3; cursor:default; background:#fff; color:var(--navy)}
+/* graph on/off + mode control shown on table slides in edit mode */
+.graph-ctrl{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:12px;
+  padding:8px 14px; background:#eef1ff; border:1px solid var(--line); border-radius:10px; font-size:14px}
+.graph-ctrl label{display:inline-flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; color:var(--navy)}
+.graph-ctrl .sep{width:1px; height:18px; background:var(--line)}
+.graph-ctrl .ghint{font-size:12px; color:var(--muted); font-weight:500; margin-left:auto}
+.chart-derived-note{position:absolute; left:8px; top:8px; z-index:5; font-size:11px; color:var(--muted);
+  background:#fff; border:1px solid var(--line); border-radius:6px; padding:3px 7px}
+
+/* ---------- JSON panel (frontend slide editor) ---------- */
+#jsonPanel{position:fixed; top:54px; right:0; bottom:0; width:380px; z-index:45;
+  background:#fff; border-left:1px solid var(--line); box-shadow:-8px 0 30px rgba(0,0,0,.12);
+  display:none; flex-direction:column; font-family:system-ui,Segoe UI,sans-serif}
+#jsonPanel.show{display:flex}
+#jsonPanel .jp-head{display:flex; align-items:center; gap:8px; padding:10px 14px;
+  background:var(--navy); color:#fff; font-weight:700; font-size:14px}
+#jsonPanel .jp-head .sp{flex:1}
+#jsonPanel .jp-head button{border:none; border-radius:6px; cursor:pointer; padding:5px 9px;
+  font-size:12px; font-weight:600; background:rgba(255,255,255,.16); color:#fff}
+#jsonPanel .jp-head button.apply{background:#1f9d55}
+#jsonPanel .jp-body{flex:1; overflow:auto; padding:12px}
+#jsonPanel pre.jv{margin:0; font:12px/1.5 ui-monospace,Menlo,Consolas,monospace; white-space:pre-wrap;
+  word-break:break-word; color:#1d2340}
+#jsonPanel textarea.je{width:100%; height:100%; box-sizing:border-box; resize:none; border:1px solid var(--line);
+  border-radius:8px; padding:10px; font:12px/1.5 ui-monospace,Menlo,Consolas,monospace}
+#jsonPanel .jp-hint{padding:8px 14px; font-size:12px; color:#6b7280; border-top:1px solid var(--line)}
+.exported #jsonPanel{display:none!important}
+@media print{ #jsonPanel,tr.colctl-row{display:none!important} }
 
 /* ---------- Nav arrows ---------- */
 .nav-arrow{position:fixed; top:50%; transform:translateY(-50%); z-index:40;
@@ -324,12 +493,22 @@ html.exported #fsFloat{display:inline-flex}
   <div class="tb-group">
     <button class="tb-btn tb-save" id="btnSaveDb" title="डाटाबेसमा सेभ गर्नुहोस् (Ctrl+S)">🗄 डाटाबेसमा सेभ</button>
     <button class="tb-btn" id="btnEdit">✏️ सम्पादन</button>
+    <button class="tb-btn" id="btnJson" title="यस स्लाइडको JSON">{ } JSON</button>
     <button class="tb-btn" id="btnOverview">▦ सबै स्लाइड</button>
     <button class="tb-btn" id="btnFull">⛶ फुलस्क्रिन</button>
     <a class="tb-btn" id="btnAdmin" href="/admin" title="एडमिन प्यानल खोल्नुहोस्" style="display:none;text-decoration:none">🗄 एडमिन</a>
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group" id="editTools" style="display:none">
+    <select class="tb-btn" id="addType" title="नयाँ स्लाइड प्रकार" style="padding:6px 8px">
+      <option value="list">सूची</option>
+      <option value="intro">परिचय</option>
+      <option value="table">तालिका</option>
+      <option value="twotable">दुई तालिका</option>
+      <option value="chart">चार्ट</option>
+      <option value="photo">फोटो</option>
+      <option value="thanks">धन्यवाद</option>
+    </select>
     <button class="tb-btn" id="btnAdd">＋ स्लाइड</button>
     <button class="tb-btn" id="btnDup">⧉ कपी</button>
     <button class="tb-btn" id="btnDel">🗑 हटाउ</button>
@@ -338,13 +517,16 @@ html.exported #fsFloat{display:inline-flex}
   </div>
   <div class="tb-spacer"></div>
   <div class="tb-group">
+    <select class="tb-btn" id="themeSelect" title="प्रस्तुति टेम्प्लेट" style="padding:6px 8px"></select>
     <button class="tb-btn" id="btnExport">⬇ JSON</button>
     <button class="tb-btn" id="btnImport">⬆ आयात</button>
+    <button class="tb-btn" id="btnPptx">📑 PPTX</button>
     <button class="tb-btn" id="btnSaveHtml">💾 HTML</button>
     <button class="tb-btn" id="btnPrint">🖨 PDF</button>
     <button class="tb-btn" id="btnReset">↺ रिसेट</button>
   </div>
   <input type="file" id="fileInput" accept="application/json" style="display:none">
+  <input type="file" id="imgInput" accept="image/*" style="display:none">
 </div>
 
 <button id="fsFloat" title="फुलस्क्रिन">⛶ फुलस्क्रिन</button>
@@ -357,6 +539,18 @@ html.exported #fsFloat{display:inline-flex}
 </div>
 
 <div id="overview"><div class="ov-grid" id="ovGrid"></div></div>
+
+<!-- Per-slide JSON view / editor -->
+<div id="jsonPanel">
+  <div class="jp-head">
+    <span id="jpTitle">JSON</span><span class="sp"></span>
+    <button class="apply" id="jpApply" style="display:none">✓ लागू</button>
+    <button id="jpClose">✕</button>
+  </div>
+  <div class="jp-body" id="jpBody"></div>
+  <div class="jp-hint" id="jpHint"></div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -716,6 +910,7 @@ async function bootstrap(){
     SERVER = false;
     DECK = load();
   }
+  initThemeSelect();
   render(); show(0);
   document.getElementById('modePill').textContent = SERVER ? '● सर्भर' : '○ अफलाइन';
   document.getElementById('modePill').className = 'brand-mode'+(SERVER?' on':'');
@@ -809,6 +1004,7 @@ function renderSlide(sl,i){
     case 'table': return frame(renderTableSlide(sl,i),sl,i);
     case 'twotable': return frame(renderTwoTable(sl,i),sl,i);
     case 'chart': return frame(renderChartSlide(sl,i),sl,i);
+    case 'photo': return renderPhoto(sl,i);
     case 'thanks': return renderThanks(sl,i);
     default: return frame('<div>?</div>',sl,i);
   }
@@ -840,6 +1036,22 @@ function renderThanks(sl,i){
   <div class="slide-foot"><div class="bar"></div><div class="fname">${esc(m.officeFull)}</div><div class="pnum">${i+1} / ${DECK.slides.length}</div></div>`;
 }
 
+function renderPhoto(sl,i){
+  const img = sl.image
+    ? `<img class="photo-full" src="${esc(sl.image)}" alt="">`
+    : `<div class="photo-empty">📷 फोटो अपलोड गर्न सम्पादन मोडमा “फोटो” थिच्नुहोस्</div>`;
+  const hasCap = (sl.title||sl.desc||editing);
+  const cap = hasCap ? `<div class="photo-caption">
+      <div class="photo-title" ${ce('slides.'+i+'.title')}>${esc(sl.title||'')}</div>
+      <div class="photo-desc" ${ce('slides.'+i+'.desc')}>${esc(sl.desc||'')}</div>
+    </div>` : '';
+  return `<div class="photo-slide">
+    ${img}
+    <button class="photo-upload" data-imgupload="slides.${i}.image">📷 फोटो</button>
+    ${cap}
+    <div class="slide-foot" style="color:#fff"><div class="pnum" style="color:#fff;margin-left:auto">${i+1} / ${DECK.slides.length}</div></div>
+  </div>`;
+}
 function renderIntro(sl,i){
   const paras = sl.paras.map((p,pi)=>`<p style="--i:${pi}" ${ce('slides.'+i+'.paras.'+pi)}>${esc(p)}</p>`).join('');
   return `<div class="intro-wrap">
@@ -847,6 +1059,7 @@ function renderIntro(sl,i){
     <div class="intro-photo">
       <img class="intro-photo-img" src="${esc(sl.photo||'office.jpg')}" alt=""
         onerror="if(this.dataset.f){this.remove()}else{this.dataset.f=1;this.src='office.png'}">
+      <button class="photo-upload" data-imgupload="slides.${i}.photo">📷 फोटो</button>
       <span ${ce('slides.'+i+'.photoText')}>${esc(sl.photoText||'')}</span>
     </div>
   </div>`;
@@ -863,9 +1076,23 @@ function renderList(sl,i){
 }
 function pad(n){ return n<10?('0'+n):(''+n); }
 
+function colControlsRow(prefix, ncol){
+  let tds='';
+  for(let c=0;c<ncol;c++){
+    tds += `<th class="colctl"><div class="colctl-btns">
+      <button class="cbtn" data-tact="colleft" data-tp="${prefix}" data-ci="${c}" title="बायाँ सार्नुहोस्"${c===0?' disabled':''}>◀</button>
+      <button class="cbtn" data-tact="addcolat" data-tp="${prefix}" data-ci="${c}" title="यसपछि स्तम्भ थप्नुहोस्">＋</button>
+      <button class="cbtn danger" data-tact="delcolat" data-tp="${prefix}" data-ci="${c}" title="स्तम्भ हटाउनुहोस्"${ncol<=1?' disabled':''}>✕</button>
+      <button class="cbtn" data-tact="colright" data-tp="${prefix}" data-ci="${c}" title="दायाँ सार्नुहोस्"${c===ncol-1?' disabled':''}>▶</button>
+    </div></th>`;
+  }
+  return `<tr class="colctl-row" contenteditable="false">${tds}</tr>`;
+}
 function tableHTML(tbl, pathPrefix, opts={}){
   const compact = opts.compact?' compact':'';
-  let thead='';
+  const single = (tbl.head||[]).length===1;
+  const ncol = Math.max(...(tbl.head||[]).map(r=>r.length), ...(tbl.rows||[]).map(r=>r.length), 1);
+  let thead = (editing && single) ? colControlsRow(pathPrefix, ncol) : '';
   (tbl.head||[]).forEach((row,ri)=>{
     thead += '<tr>'+row.map((c,ci)=>{
       const cs=c.cs?` colspan="${c.cs}"`:''; const rs=c.rs?` rowspan="${c.rs}"`:'';
@@ -884,15 +1111,17 @@ function tableHTML(tbl, pathPrefix, opts={}){
 
 function renderTableSlide(sl,i){
   const cap = sl.caption?`<div class="tbl-cap" ${ce('slides.'+i+'.caption')}>${esc(sl.caption)}</div>`:'';
-  const hasChart = !!sl.chart;
+  if(sl.chart) applyDerived(i);
+  const ctrls = tableGraphControls(sl,i);
   const tbl = tableHTML(sl,'slides.'+i,{compact:sl.compact,totalRow:sl.totalRow});
-  if(hasChart){
-    return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:26px;height:100%">
-      <div class="tbl-scroll">${cap}${tbl}</div>
-      <div class="chart-box">${chartBoxHTML(i,sl)}</div>
-    </div>`;
-  }
-  return `<div class="tbl-scroll">${cap}${tbl}</div>`;
+  const showInline = sl.chart && (sl.chartMode||'inline')!=='linked';
+  const inner = showInline
+    ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:26px;flex:1;min-height:0">
+        <div class="tbl-scroll">${cap}${tbl}</div>
+        <div class="chart-box">${chartBoxHTML(i,sl)}</div>
+      </div>`
+    : `<div class="tbl-scroll" style="flex:1;min-height:0">${cap}${tbl}</div>`;
+  return `<div style="display:flex;flex-direction:column;height:100%">${ctrls}${inner}</div>`;
 }
 
 function renderTwoTable(sl,i){
@@ -922,19 +1151,24 @@ function chartCtrlsHTML(i,c){
 }
 function chartBoxHTML(i,sl){
   const canId='chart_'+i;
+  const derived=isDerived(sl);
+  const editor = derived
+    ? `<div class="chart-derived-note">डाटा तालिकाबाट स्वतः बन्छ</div>`
+    : `<button class="tb-btn mini-toggle" data-datatoggle="${i}" style="background:var(--navy)">✎ डाटा</button>
+       <div class="data-editor" id="de_${i}">${dataEditorHTML(i,sl.chart)}</div>`;
   return `
     ${chartCtrlsHTML(i,sl.chart)}
-    <button class="tb-btn mini-toggle" data-datatoggle="${i}" style="background:var(--navy)">✎ डाटा</button>
+    ${editor}
     <div class="chart-canvas-wrap"><canvas id="${canId}"></canvas>
       <div class="chart-fallback" id="fb_${i}" style="display:none"></div>
-    </div>
-    <div class="data-editor" id="de_${i}">${dataEditorHTML(i,sl.chart)}</div>`;
+    </div>`;
 }
 
 function dataEditorHTML(i,chart){
-  let h='<table><thead><tr><th></th>'+chart.labels.map((l,li)=>
+  const labels=(chart&&chart.labels)||[], datasets=(chart&&chart.datasets)||[];
+  let h='<table><thead><tr><th></th>'+labels.map((l,li)=>
     `<th><input data-de="${i}" data-kind="label" data-li="${li}" value="${esc(l)}"></th>`).join('')+'</tr></thead><tbody>';
-  chart.datasets.forEach((ds,di)=>{
+  datasets.forEach((ds,di)=>{
     h+='<tr><td class="lblcell"><input data-de="${i}" data-kind="dslabel" data-di="'+di+'" value="'+esc(ds.label)+'"></td>'+
       ds.data.map((v,vi)=>`<td><input data-de="${i}" data-kind="val" data-di="${di}" data-vi="${vi}" value="${esc(v)}"></td>`).join('')+'</tr>';
   });
@@ -956,11 +1190,143 @@ function vGradient(ctx,area,hex,a1,a2){
   g.addColorStop(0,hexA(hex,a1)); g.addColorStop(1,hexA(hex,a2)); return g;
 }
 
+/* ---------- Table ⇄ chart linking (chart data derived from the table) ---------- */
+function genLinkId(){ return 'lk'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+// Build chart labels/datasets from a table: first column = category labels,
+// each further column = one series (header text = series name).
+function deriveTableData(tbl){
+  const head=(tbl.head&&tbl.head[0])||[];
+  const all=tbl.rows||[];
+  const rows = (tbl.totalRow && all.length>1) ? all.slice(0,-1) : all;   // skip the total row
+  const ncol=Math.max(head.length, ...all.map(r=>r.length), 0);
+  const labels=rows.map(r=>String(r[0]==null?'':r[0]));
+  const datasets=[];
+  for(let c=1;c<ncol;c++){
+    datasets.push({
+      label:String((head[c]&&head[c].t)||('स्तम्भ '+(c+1))),
+      data:rows.map(r=>{ const n=parseFloat(String(r[c]==null?'':r[c]).replace(/,/g,'').trim()); return isNaN(n)?0:n; })
+    });
+  }
+  return {labels, datasets};
+}
+function isLinkedChart(sl){ return sl.type==='chart' && !!sl.linkedTo; }
+// The source table a chart derives from, or null if it holds its own data
+// (or, for a linked chart, if its source table no longer exists).
+function chartSource(sl){
+  if(sl.type==='table' && sl.chart && sl.chartFromTable) return sl;
+  if(isLinkedChart(sl)) return DECK.slides.find(s=>s.type==='table' && s.linkId===sl.linkedTo) || null;
+  return null;
+}
+// A chart whose data comes from a table — linked charts count even when their
+// source table is missing, so they never fall back to the manual data editor.
+function isDerived(sl){ return (sl.type==='table' && sl.chart && sl.chartFromTable) || isLinkedChart(sl); }
+// Write the derived data into slide i's chart config so render + save use it.
+function applyDerived(i){
+  const sl=DECK.slides[i]; if(!sl||!sl.chart) return;
+  const src=chartSource(sl); if(!src) return;
+  const d=deriveTableData(src);
+  sl.chart.labels=d.labels; sl.chart.datasets=d.datasets;
+}
+// After a table cell/header edit, live-update every chart that derives from it.
+function liveUpdateDerived(tableIndex){
+  const tbl=DECK.slides[tableIndex]; if(!tbl) return;
+  DECK.slides.forEach((sl,i)=>{
+    if(chartSource(sl)!==tbl) return;
+    applyDerived(i);
+    dirty.slides.add(i);
+    const ci=chartInstances[i]; if(!ci) return;
+    ci.data.labels=sl.chart.labels.slice();
+    sl.chart.datasets.forEach((ds,di)=>{
+      if(ci.data.datasets[di]){ ci.data.datasets[di].label=ds.label; ci.data.datasets[di].data=ds.data.slice(); }
+      else ci.data.datasets.push({label:ds.label, data:ds.data.slice()});
+    });
+    while(ci.data.datasets.length>sl.chart.datasets.length) ci.data.datasets.pop();
+    ci.update();
+  });
+}
+// Graph on/off + inline/linked controls for a table slide (edit mode only).
+function tableGraphControls(sl,i){
+  if(!editing) return '';
+  const on=!!sl.chart, mode=sl.chartMode||'inline';
+  return `<div class="graph-ctrl" contenteditable="false">
+    <label><input type="checkbox" data-gact="toggle" data-i="${i}" ${on?'checked':''}> 📊 ग्राफ देखाउनुहोस्</label>
+    ${on?`<span class="sep"></span>
+      <label><input type="radio" name="gmode${i}" data-gact="mode" data-mode="inline" data-i="${i}" ${mode!=='linked'?'checked':''}> उही पृष्ठमा</label>
+      <label><input type="radio" name="gmode${i}" data-gact="mode" data-mode="linked" data-i="${i}" ${mode==='linked'?'checked':''}> अलग लिंक स्लाइड</label>
+      <span class="ghint">डाटा तालिकाबाट स्वतः अपडेट हुन्छ</span>`:''}
+  </div>`;
+}
+function pickChartCfg(c){ c=c||{}; const o={type:c.type||'bar'};
+  ['stacked','horizontal','datalabels','dualAxis','sub'].forEach(k=>{ if(c[k]!=null) o[k]=c[k]; }); return o; }
+async function removeLinkedCompanions(linkId){
+  if(!linkId) return;
+  const comps=DECK.slides.filter(s=>s.type==='chart' && s.linkedTo===linkId);
+  for(const comp of comps){
+    if(SERVER && comp._id!=null){ await api('DELETE','/api/slides/'+comp._id); }
+    else { const k=DECK.slides.indexOf(comp); if(k>=0) DECK.slides.splice(k,1); }
+  }
+  if(SERVER && comps.length) await reloadDeck();
+}
+// Turn the graph on/off for a table slide.
+async function setGraph(i,on){
+  const sl=DECK.slides[i]; if(!sl) return;
+  if(on){
+    sl.chart = sl.chart || {type:'bar'};
+    sl.chartFromTable = true;
+    sl.chartMode = sl.chartMode || 'inline';
+    applyDerived(i);
+  }else{
+    delete sl.chart; delete sl.chartFromTable; delete sl.chartMode;
+    await removeLinkedCompanions(sl.linkId);
+    // keep sl.linkId stable so re-enabling a linked graph reuses the same id
+    // (regenerating it would orphan any companion left behind).
+  }
+  markDirty('slides.'+i); render(); show(cur); scheduleSave();
+}
+// Switch a table slide's graph between inline and a separate linked slide.
+async function setGraphMode(i,mode){
+  const sl=DECK.slides[i]; if(!sl||!sl.chart) return;
+  if(mode==='linked'){
+    sl.linkId = sl.linkId || genLinkId();
+    sl.chartMode='linked';
+    const exists=DECK.slides.some(s=>s.type==='chart' && s.linkedTo===sl.linkId);
+    if(!exists){
+      const comp={type:'chart', linkedTo:sl.linkId, title:(sl.title||'तालिका')+' — ग्राफ', chart:pickChartCfg(sl.chart)};
+      if(SERVER){ await flushSave(); const r=await api('POST','/api/slides',{after:sl._id, slide:comp}); await reloadDeck(); }
+      else { DECK.slides.splice(i+1,0,comp); }
+    }
+    markDirty('slides.'+i); render(); show(cur); scheduleSave();
+    toast('ग्राफ अलग लिंक स्लाइडमा देखिन्छ');
+  }else{
+    sl.chartMode='inline';
+    await removeLinkedCompanions(sl.linkId);
+    markDirty('slides.'+i); render(); show(cur); scheduleSave();
+    toast('ग्राफ उही पृष्ठमा देखिन्छ');
+  }
+}
+// delegated handler for the graph controls
+stage.addEventListener('change', e=>{
+  const el=e.target.closest('[data-gact]'); if(!el) return;
+  const i=+el.dataset.i;
+  if(el.dataset.gact==='toggle') setGraph(i, el.checked);
+  else if(el.dataset.gact==='mode' && el.checked) setGraphMode(i, el.dataset.mode);
+});
+
 function buildChart(i,sl){
   if(chartInstances[i]) return;
+  applyDerived(i);
   ensureDatalabels();
   const c = sl.chart; const canvas = document.getElementById('chart_'+i);
   if(!canvas) return;
+  // Unresolved derived/linked chart (e.g. its source table was removed): show a
+  // placeholder instead of crashing the whole render.
+  if(!c || !Array.isArray(c.labels) || !Array.isArray(c.datasets)){
+    const fb=document.getElementById('fb_'+i);
+    if(fb){ fb.style.display='block';
+      fb.innerHTML='<p style="color:#888;padding:20px">लिंक गरिएको तालिका फेला परेन — ग्राफ देखाउन सकिएन।</p>';
+      canvas.style.display='none'; }
+    return;
+  }
   if(typeof Chart==='undefined'){
     const fb=document.getElementById('fb_'+i);
     if(fb){ fb.style.display='block'; fb.innerHTML = fallbackTable(c); canvas.style.display='none'; }
@@ -1061,6 +1427,7 @@ function show(idx){
   ensureChart(cur);
   updateArrows();
   animateSlide(cur);
+  renderJsonPanel();
 }
 function updateArrows(){
   document.getElementById('prev').style.visibility = cur>0?'visible':'hidden';
@@ -1091,15 +1458,60 @@ function toggleEdit(){
   document.getElementById('btnEdit').classList.toggle('active',editing);
   document.getElementById('editTools').style.display=editing?'flex':'none';
   applyEditing();
+  render();            // rebuild so table column controls appear/disappear
+  show(cur);
+  renderJsonPanel();   // swap JSON panel between read-only and editable
   toast(editing?'सम्पादन मोड चालु — कुनै पनि टेक्स्टमा क्लिक गरी परिवर्तन गर्नुहोस्':'सम्पादन मोड बन्द');
 }
 document.getElementById('btnEdit').onclick=toggleEdit;
+
+/* ---------- Per-slide JSON panel ---------- */
+let jsonPanelOpen=false;
+function renderJsonPanel(){
+  if(!jsonPanelOpen) return;
+  const sl=DECK.slides[cur]; if(!sl) return;
+  const txt=JSON.stringify(slidePayload(sl),null,2);
+  document.getElementById('jpTitle').textContent='JSON — स्लाइड '+(cur+1);
+  const body=document.getElementById('jpBody');
+  const apply=document.getElementById('jpApply');
+  const hint=document.getElementById('jpHint');
+  if(editing){
+    body.innerHTML=`<textarea class="je" id="jpText" spellcheck="false"></textarea>`;
+    document.getElementById('jpText').value=txt;
+    apply.style.display='';
+    hint.textContent='यस स्लाइडको JSON सम्पादन गरी “लागू” थिच्नुहोस्।';
+  }else{
+    body.innerHTML=`<pre class="jv"></pre>`;
+    body.querySelector('pre').textContent=txt;
+    apply.style.display='none';
+    hint.textContent='सम्पादन गर्न ✏️ सम्पादन मोड चालु गर्नुहोस्।';
+  }
+}
+function toggleJsonPanel(){
+  jsonPanelOpen=!jsonPanelOpen;
+  document.getElementById('jsonPanel').classList.toggle('show',jsonPanelOpen);
+  document.getElementById('btnJson').classList.toggle('active',jsonPanelOpen);
+  renderJsonPanel();
+}
+document.getElementById('btnJson').onclick=toggleJsonPanel;
+document.getElementById('jpClose').onclick=toggleJsonPanel;
+document.getElementById('jpApply').onclick=()=>{
+  const ta=document.getElementById('jpText'); if(!ta) return;
+  let obj; try{ obj=JSON.parse(ta.value); }
+  catch(err){ toast('⚠ अमान्य JSON: '+err.message); return; }
+  if(!obj || typeof obj!=='object' || Array.isArray(obj)){ toast('⚠ JSON अब्जेक्ट हुनुपर्छ'); return; }
+  const id=DECK.slides[cur]._id; DECK.slides[cur]=obj; if(id!=null) DECK.slides[cur]._id=id;
+  markDirty('slides.'+cur); render(); renderJsonPanel(); scheduleSave();
+  toast('✔ JSON लागू भयो');
+};
 
 // text edits -> model
 stage.addEventListener('input', e=>{
   const el=e.target.closest('[data-edit]'); if(!el) return;
   setByPath(DECK, el.dataset.edit, coerce(el.textContent, el.dataset.edit));
   markDirty(el.dataset.edit);
+  const m=el.dataset.edit.match(/^slides\.(\d+)\.(rows|head)\b/);
+  if(m) liveUpdateDerived(+m[1]);
   scheduleSave();
 });
 // chart data editor
@@ -1122,6 +1534,19 @@ stage.addEventListener('input', e=>{
 stage.addEventListener('click', e=>{
   const b=e.target.closest('[data-datatoggle]'); if(!b) return;
   document.getElementById('de_'+b.dataset.datatoggle).classList.toggle('show');
+});
+// table column ops (edit mode): move left/right, insert after, delete
+stage.addEventListener('click', e=>{
+  const b=e.target.closest('[data-tact]'); if(!b) return;
+  const prefix=b.dataset.tp, ci=+b.dataset.ci, act=b.dataset.tact;
+  const tbl=getByPath(DECK, prefix); if(!tbl) return;
+  const head=tbl.head||[], rows=tbl.rows||[];
+  if(act==='addcolat'){ head.forEach(hr=>hr.splice(ci+1,0,{t:''})); rows.forEach(r=>r.splice(ci+1,0,'')); }
+  else if(act==='delcolat'){ head.forEach(hr=>hr.splice(ci,1)); rows.forEach(r=>r.splice(ci,1)); }
+  else if(act==='colleft'){ const sw=r=>{[r[ci-1],r[ci]]=[r[ci],r[ci-1]];}; head.forEach(sw); rows.forEach(sw); }
+  else if(act==='colright'){ const sw=r=>{[r[ci+1],r[ci]]=[r[ci],r[ci+1]];}; head.forEach(sw); rows.forEach(sw); }
+  else return;
+  markDirty(prefix); render(); renderJsonPanel(); scheduleSave();
 });
 // chart type / options controls -> update config + rebuild chart
 stage.addEventListener('change', e=>{
@@ -1213,12 +1638,42 @@ async function persistOrder(){
   if(SERVER) await api('POST','/api/slides/reorder',{order:DECK.slides.map(s=>s._id)});
   else save();
 }
+const NEW_SLIDE = {
+  list:    ()=>({type:'list',title:'नयाँ सूची',cols:1,big:true,items:['नयाँ बुँदा']}),
+  intro:   ()=>({type:'intro',title:'नयाँ परिचय',paras:['यहाँ विवरण लेख्नुहोस्।'],photoText:''}),
+  table:   ()=>({type:'table',title:'नयाँ तालिका',head:[[{t:'शीर्षक'},{t:'मान'}]],rows:[['',''],['','']]}),
+  twotable:()=>({type:'twotable',title:'नयाँ दुई तालिका',tables:[{head:[[{t:'क'},{t:'ख'}]],rows:[['','']]},{head:[[{t:'क'},{t:'ख'}]],rows:[['','']]}]}),
+  chart:   ()=>({type:'chart',title:'नयाँ चार्ट',chart:{type:'bar',labels:['क','ख','ग'],datasets:[{label:'शृंखला १',data:[0,0,0]}]}}),
+  photo:   ()=>({type:'photo',title:'नयाँ फोटो',desc:'विवरण यहाँ लेख्नुहोस्',image:''}),
+  thanks:  ()=>({type:'thanks',text:'धन्यवाद !'}),
+};
 document.getElementById('btnAdd').onclick=async ()=>{
   await flushSave();
-  const s={type:'list',title:'नयाँ स्लाइड',cols:1,big:true,items:['नयाँ बुँदा']};
+  const type=document.getElementById('addType').value;
+  const s=(NEW_SLIDE[type]||NEW_SLIDE.list)();
   if(SERVER){ await api('POST','/api/slides',{after:DECK.slides[cur]?._id ?? null, slide:s}); await reloadDeck(); show(Math.min(cur+1,DECK.slides.length-1)); }
   else { DECK.slides.splice(cur+1,0,s); save(); render(); show(cur+1); }
   toast('स्लाइड थपियो');
+};
+
+/* ---------- Image upload (replace a photo / fill a photo slide) ---------- */
+let imgUploadPath=null;
+stage.addEventListener('click', e=>{
+  const b=e.target.closest('[data-imgupload]'); if(!b) return;
+  imgUploadPath=b.dataset.imgupload;
+  document.getElementById('imgInput').click();
+});
+document.getElementById('imgInput').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f||!imgUploadPath) return;
+  const path=imgUploadPath; imgUploadPath=null;
+  const dataUrl=await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(f); });
+  let url=dataUrl;   // offline / fallback: inline the image as a data URL
+  if(SERVER){
+    try{ const rec=await api('POST','/api/images',{filename:f.name,mimetype:f.type,data:dataUrl}); url=rec.url; }
+    catch(err){ toast('⚠ सर्भरमा अपलोड भएन — लोकलमा राखियो'); }
+  }
+  setByPath(DECK, path, url); markDirty(path); render(); renderJsonPanel(); scheduleSave();
+  toast('✔ फोटो राखियो');
 };
 document.getElementById('btnDup').onclick=async ()=>{
   await flushSave();
@@ -1302,6 +1757,98 @@ document.getElementById('btnReset').onclick=async ()=>{
   else { DECK=structuredClone(ORIGINAL_DECK); save(); render(); }
   cur=0; show(0); toast('रिसेट भयो');
 };
+/* ---------- Presentation templates (themes) ---------- */
+const THEMES=[['classic','उत्कृष्ट'],['ocean','महासागर'],['emerald','पन्ना'],['royal','राजसी'],['slate','स्लेट']];
+function initThemeSelect(){
+  const sel=document.getElementById('themeSelect');
+  sel.innerHTML=THEMES.map(([v,l])=>`<option value="${v}">🎨 ${l}</option>`).join('');
+  let name=(DECK.meta&&DECK.meta.theme)||null;
+  try{ name=name||localStorage.getItem('deckTheme'); }catch(_){}
+  name=THEMES.some(t=>t[0]===name)?name:'classic';
+  applyTheme(name,false); sel.value=name;
+  sel.onchange=()=>applyTheme(sel.value,true);
+}
+function applyTheme(name,persist){
+  document.documentElement.setAttribute('data-theme',name);
+  try{ localStorage.setItem('deckTheme',name); }catch(_){}
+  if(persist){
+    DECK.meta=DECK.meta||{}; DECK.meta.theme=name; dirty.meta=true; scheduleSave();
+    DECK.slides.forEach((sl,i)=>{ if(sl.chart && chartInstances[i]){ try{chartInstances[i].destroy()}catch(_){} delete chartInstances[i]; } });
+    ensureChart(cur);
+    const lbl=(THEMES.find(t=>t[0]===name)||[])[1]||name;
+    toast('टेम्प्लेट: '+lbl);
+  }
+}
+
+/* ---------- Export to PowerPoint (PptxGenJS) ---------- */
+function cssColor(v,fallback){ const c=getComputedStyle(document.documentElement).getPropertyValue(v).trim(); return (c||fallback).replace('#','').toUpperCase(); }
+function addPptxTable(pptx,s,tbl,y,green){
+  const rows=[];
+  (tbl.head||[]).forEach(hr=>rows.push(hr.map(c=>({text:String(c&&c.t||''),
+    options:{bold:true,color:'FFFFFF',fill:{color:green},align:'center',valign:'middle'}}))));
+  (tbl.rows||[]).forEach(r=>rows.push(r.map(v=>({text:String(v==null?'':v),options:{color:'222222'}}))));
+  if(!rows.length) return y;
+  s.addTable(rows,{x:0.4,y,w:12.5,fontSize:11,border:{type:'solid',color:'D8D8E4',pt:1},
+    valign:'middle',autoPage:false});
+  return y + Math.min(5.6, 0.34*rows.length) + 0.15;
+}
+function addPptxChart(pptx,s,c){
+  if(!c) return;
+  const map={bar:'bar',line:'line',area:'area',radar:'radar',doughnut:'doughnut',pie:'pie',polarArea:'pie'};
+  const ct=pptx.ChartType[map[c.type||'bar']||'bar']||pptx.ChartType.bar;
+  const data=(c.datasets||[]).map(ds=>({name:ds.label||'',labels:(c.labels||[]).map(String),values:(ds.data||[]).map(Number)}));
+  if(!data.length) return;
+  s.addChart(ct,data,{x:0.6,y:1.4,w:12,h:5.4,showLegend:true,legendPos:'b',showTitle:false,
+    barDir:c.horizontal?'bar':'col',barGrouping:c.stacked?'stacked':'clustered'});
+}
+async function exportPptx(){
+  if(typeof PptxGenJS==='undefined'){ toast('⚠ PPTX लाइब्रेरी लोड भएन (इन्टरनेट चाहिन्छ)'); return; }
+  toast('PPTX बन्दै…');
+  try{
+    const pptx=new PptxGenJS();
+    pptx.defineLayout({name:'W16x9',width:13.333,height:7.5}); pptx.layout='W16x9';
+    const navy=cssColor('--navy','#1b1b52'), green=cssColor('--green','#1e5b45'), red=cssColor('--red','#b01e39');
+    const m=DECK.meta||{};
+    DECK.slides.forEach(sl=>{
+      const s=pptx.addSlide();
+      if(sl.type==='title'){
+        s.background={color:navy};
+        s.addText(String(m.province||''),{x:0.5,y:0.9,w:12.3,h:0.6,align:'center',color:'FFFFFF',fontSize:24,bold:true});
+        s.addText(String(m.ministry||''),{x:0.5,y:1.6,w:12.3,h:0.6,align:'center',color:'FFD5DE',fontSize:16});
+        s.addText(String(m.reportTitle||''),{x:0.5,y:2.8,w:12.3,h:1.4,align:'center',color:'FFFFFF',fontSize:44,bold:true});
+        s.addText(String(m.officeFull||''),{x:0.5,y:4.4,w:12.3,h:0.8,align:'center',color:'FFFFFF',fontSize:20});
+        s.addText(String(m.fy||''),{x:0.5,y:5.4,w:12.3,h:0.6,align:'center',color:'FFFFFF',fontSize:18,bold:true});
+        return;
+      }
+      if(sl.type==='thanks'){
+        s.addText(String(sl.text||'धन्यवाद !'),{x:0.5,y:3.0,w:12.3,h:1.6,align:'center',color:navy,fontSize:54,bold:true});
+        return;
+      }
+      s.addText(String(sl.title||''),{x:0.4,y:0.3,w:12.5,h:0.8,color:navy,fontSize:28,bold:true});
+      s.addShape(pptx.ShapeType.line,{x:0.4,y:1.12,w:3,h:0,line:{color:red,width:2.5}});
+      if(sl.type==='intro'){
+        let y=1.4;
+        (sl.paras||[]).forEach(p=>{ s.addText(String(p),{x:0.5,y,w:12.3,h:0.9,fontSize:16,color:'222222',valign:'top'}); y+=0.95; });
+        if(sl.photoText) s.addText(String(sl.photoText),{x:0.5,y,w:12.3,h:0.5,fontSize:13,italic:true,color:'666666'});
+      } else if(sl.type==='list'){
+        const start=sl.startNo||1;
+        const items=(sl.items||[]).map((t,ii)=>({text:(start+ii)+'. '+String(t),options:{fontSize:16,color:'222222',breakLine:true,paraSpaceAfter:8}}));
+        if(items.length) s.addText(items,{x:0.6,y:1.4,w:12.2,h:5.6,valign:'top'});
+      } else if(sl.type==='table'){
+        addPptxTable(pptx,s,sl,1.4,green);
+      } else if(sl.type==='twotable'){
+        let yy=1.4; (sl.tables||[]).forEach(tb=>{ yy=addPptxTable(pptx,s,tb,yy,green); });
+      } else if(sl.type==='chart'){
+        if(sl.chart&&sl.chart.sub) s.addText(String(sl.chart.sub),{x:0.4,y:1.15,w:12.5,h:0.4,fontSize:14,color:navy,bold:true});
+        addPptxChart(pptx,s,sl.chart);
+      }
+    });
+    await pptx.writeFile({fileName:(m.reportTitle||'presentation').replace(/[\\/:*?"<>|]/g,'_')+'.pptx'});
+    toast('✔ PPTX डाउनलोड भयो');
+  }catch(err){ console.error(err); toast('⚠ PPTX बनाउन सकिएन'); }
+}
+document.getElementById('btnPptx').onclick=exportPptx;
+
 function downloadBlob(content,name,type){
   const b=new Blob([content],{type}); const u=URL.createObjectURL(b);
   const a=document.createElement('a'); a.href=u; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1000);

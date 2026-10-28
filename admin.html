@@ -93,6 +93,8 @@ td.actcol{width:1%; white-space:nowrap}
 .subtbl th{background:#f4f6fb; font-weight:700; color:var(--navy); font-size:12px; padding:5px}
 .subtbl .inp{padding:5px 6px; font-size:13px; border-radius:5px; min-width:70px}
 .subtbl td.rn{background:#f4f6fb; color:var(--muted); font-weight:700; text-align:center; width:28px}
+.subtbl td.colctl{background:#f4f6fb; padding:2px; white-space:nowrap; text-align:center}
+.subtbl td.colctl .btn{padding:2px 4px; margin:0 1px; min-width:0}
 .editor-block{margin-top:18px; padding-top:16px; border-top:1px solid var(--line)}
 .editor-block > h4{margin:0 0 10px; font-size:14px; color:var(--navy); display:flex; align-items:center; gap:8px}
 .item-row{display:flex; gap:8px; align-items:flex-start; margin-bottom:8px}
@@ -103,13 +105,27 @@ td.actcol{width:1%; white-space:nowrap}
 .overlay{position:fixed; inset:0; background:rgba(18,18,40,.55); z-index:40; display:none;
   align-items:flex-start; justify-content:center; overflow:auto; padding:34px 16px}
 .overlay.show{display:flex}
-.modal{background:var(--paper); width:min(880px,100%); border-radius:16px; overflow:hidden;
+.modal{background:var(--paper); width:min(1180px,100%); border-radius:16px; overflow:hidden;
   box-shadow:0 30px 80px rgba(0,0,0,.4)}
 .modal header{display:flex; align-items:center; gap:10px; padding:15px 20px;
   background:var(--navy); color:#fff}
 .modal header h3{margin:0; font-size:16px; font-weight:800}
 .modal header .sp{flex:1}
-.modal .mbody{padding:20px; max-height:calc(100vh - 190px); overflow:auto}
+.modal .mbody{padding:0; max-height:calc(100vh - 190px); overflow:auto}
+/* two-column editor layout: form + JSON */
+.m-cols{display:grid; grid-template-columns:1fr 380px; align-items:start}
+.m-form{padding:20px; min-width:0}
+.m-json{padding:16px; border-left:1px solid var(--line); background:#fafbff;
+  position:sticky; top:0; align-self:stretch}
+.m-json h4{margin:0 0 10px; font-size:13px; color:var(--navy); display:flex; align-items:center; gap:8px}
+.m-json h4 .sp{flex:1}
+.jsonview{margin:0; font:12px/1.5 ui-monospace,Menlo,Consolas,monospace; white-space:pre-wrap;
+  word-break:break-word; background:#fff; border:1px solid var(--line); border-radius:8px;
+  padding:10px; max-height:calc(100vh - 300px); overflow:auto; color:#1d2340}
+textarea.jsonedit{width:100%; box-sizing:border-box; font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;
+  min-height:calc(100vh - 340px); border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical}
+.jsonerr{color:var(--red); font-size:12px; margin:8px 0 0}
+@media(max-width:860px){ .m-cols{grid-template-columns:1fr} .m-json{border-left:none; border-top:1px solid var(--line); position:static} }
 .modal footer{display:flex; gap:10px; justify-content:flex-end; padding:14px 20px;
   border-top:1px solid var(--line); background:#f6f7fc; position:sticky; bottom:0}
 
@@ -151,6 +167,7 @@ td.actcol{width:1%; white-space:nowrap}
   </div>
 </div>
 
+<input type="file" id="imgInput" accept="image/*" style="display:none">
 <div id="toast"></div>
 
 <script>
@@ -163,7 +180,7 @@ const META_FIELDS = [
   ['officeFull','कार्यालय (पूरा)'],['fy','आर्थिक वर्ष'],['reportTitle','प्रतिवेदन शीर्षक']
 ];
 const TYPE_LABELS = {title:'शीर्षक',intro:'परिचय',list:'सूची',table:'तालिका',
-  twotable:'दुई तालिका',chart:'चार्ट',thanks:'धन्यवाद'};
+  twotable:'दुई तालिका',chart:'चार्ट',photo:'फोटो',thanks:'धन्यवाद'};
 const CHART_TYPES = [['bar','बार'],['line','रेखा'],['area','क्षेत्र'],
   ['radar','रडार'],['doughnut','डोनट'],['pie','पाई'],['polarArea','पोलर']];
 const SKELETONS = {
@@ -175,6 +192,7 @@ const SKELETONS = {
       {head:[[{t:'क'},{t:'ख'}]], rows:[['','']]}]}),
   chart:   ()=>({type:'chart', title:'नयाँ चार्ट', chart:{type:'bar', labels:['क','ख','ग'],
       datasets:[{label:'शृंखला १', data:[0,0,0]}]}}),
+  photo:   ()=>({type:'photo', title:'नयाँ फोटो', desc:'विवरण यहाँ लेख्नुहोस्', image:''}),
   thanks:  ()=>({type:'thanks', text:'धन्यवाद !'})
 };
 
@@ -251,6 +269,7 @@ function slideSummary(s){
     case 'intro': return (s.paras||[]).length+' अनुच्छेद';
     case 'table': return (s.rows||[]).length+' पंक्ति'+(s.chart?' · चार्ट':'');
     case 'twotable': return (s.tables||[]).length+' तालिका';
+    case 'photo': return s.image?'फोटो सहित':'फोटो छैन';
     case 'chart': return (s.chart?.datasets||[]).length+' शृंखला · '+(s.chart?.type||'');
     case 'thanks': return esc(s.text||'');
     case 'title': return 'शीर्षक स्लाइड';
@@ -318,15 +337,36 @@ function wireSlides(){
 async function reload(){ DECK = await api('GET','/api/deck'); renderApp(); }
 
 /* ---------------- SLIDE EDITOR (modal) ---------------- */
+let jsonEdit=false;   // whether the JSON panel is in edit mode
 function openEditor(i){
-  workIndex=i; work=structuredClone(DECK.slides[i]);
+  workIndex=i; work=structuredClone(DECK.slides[i]); jsonEdit=false;
   $('#mTitle').textContent = 'सम्पादन: '+(TYPE_LABELS[work.type]||work.type)+' (#'+(i+1)+')';
   renderEditor();
   $('#overlay').classList.add('show');
 }
-function closeEditor(){ $('#overlay').classList.remove('show'); work=null; workIndex=-1; }
+function closeEditor(){ $('#overlay').classList.remove('show'); work=null; workIndex=-1; jsonEdit=false; }
 
-function renderEditor(){ $('#mBody').innerHTML = editorHTML(work); }
+function renderEditor(){
+  $('#mBody').innerHTML = `<div class="m-cols">
+    <div class="m-form">${editorHTML(work)}</div>
+    <div class="m-json">${jsonPanel()}</div>
+  </div>`;
+}
+
+/* JSON view / editor for the slide currently being edited */
+function jsonPanel(){
+  const txt = esc(JSON.stringify(stripId(work), null, 2));
+  if(!jsonEdit){
+    return `<h4>JSON <span class="sp"></span>
+        <button class="btn sm" data-act="jsonedit">✎ JSON सम्पादन</button></h4>
+      <pre class="jsonview">${txt}</pre>`;
+  }
+  return `<h4>JSON सम्पादन <span class="sp"></span>
+      <button class="btn sm green" data-act="jsonapply">✓ लागू</button>
+      <button class="btn sm" data-act="jsoncancel">✕ रद्द</button></h4>
+    <textarea class="jsonedit" id="jsonText" spellcheck="false">${txt}</textarea>
+    <p class="hint">यस स्लाइडको JSON सिधै सम्पादन गरी “लागू” थिच्नुहोस्।</p>`;
+}
 
 function fieldText(label,path,val){ return `<div class="field"><label>${label}</label>
   <input type="text" class="inp" data-f="${path}" value="${esc(val||'')}"></div>`; }
@@ -343,15 +383,37 @@ function editorHTML(w){
     case 'twotable': return twoTableEditor(w);
     case 'chart':  return `<div class="grid"><div class="field"><label>शीर्षक</label>
         <input type="text" class="inp" data-f="title" value="${esc(w.title||'')}"></div></div>`+chartEditor(w.chart,'chart.');
+    case 'photo':  return photoEditor(w);
     default: return '<p>अज्ञात प्रकार</p>';
   }
 }
 
+function photoEditor(w){
+  const preview = w.image
+    ? `<img src="${esc(w.image)}" alt="" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid var(--line)">`
+    : `<div class="hint">कुनै फोटो छैन।</div>`;
+  return `<div class="grid">
+      ${fieldText('शीर्षक','title',w.title)}
+      ${fieldText('विवरण','desc',w.desc)}
+    </div>
+    <div class="editor-block"><h4>फोटो</h4>
+      <div style="margin-bottom:10px">${preview}</div>
+      <button class="btn sm" data-act="imgupload" data-path="image">📷 फोटो अपलोड</button>
+      ${w.image?`<button class="btn sm danger" data-act="imgclear" data-path="image">हटाउनुहोस्</button>`:''}
+      <p class="hint">फोटो डाटाबेसमा भण्डारण हुन्छ।</p>
+    </div>`;
+}
 function introEditor(w){
   const paras=(w.paras||[]).map((p,i)=>`<div class="item-row">
     <textarea class="inp" data-f="paras.${i}">${esc(p)}</textarea>
     <button class="btn sm danger" data-act="delpara" data-i="${i}">✕</button></div>`).join('');
+  const imgPrev = w.photo
+    ? `<img src="${esc(w.photo)}" alt="" style="max-height:120px;border-radius:8px;border:1px solid var(--line);margin-right:10px;vertical-align:middle">`
+    : '';
   return `<div class="grid">${fieldText('शीर्षक','title',w.title)}${fieldText('फोटो क्याप्सन','photoText',w.photoText)}</div>
+    <div class="editor-block"><h4>फोटो</h4>${imgPrev}
+      <button class="btn sm" data-act="imgupload" data-path="photo">📷 फोटो अपलोड</button>
+      ${w.photo?`<button class="btn sm danger" data-act="imgclear" data-path="photo">हटाउनुहोस्</button>`:''}</div>
     <div class="editor-block"><h4>अनुच्छेदहरू</h4>${paras}
       <button class="btn sm" data-act="addpara">＋ अनुच्छेद</button></div>`;
 }
@@ -403,16 +465,23 @@ function gridEditor(t, prefix){
       `<td class="rn"><button class="btn sm danger icon" data-act="delrow" data-prefix="${prefix}" data-i="${ri}">✕</button></td></tr>`;
   });
   const colhdr = Array.from({length:ncol},(_,c)=>`<th>स्तम्भ ${c+1}</th>`).join('');
+  // per-column controls (single-header tables only): move left, insert after, delete
+  const colctl = single ? '<tr><td class="rn"></td>'+Array.from({length:ncol},(_,c)=>
+      `<td class="colctl">
+        <button class="btn sm icon" data-act="colleft" data-prefix="${prefix}" data-ci="${c}" title="बायाँ सार्नुहोस्" ${c===0?'disabled':''}>◀</button>
+        <button class="btn sm icon" data-act="addcolat" data-prefix="${prefix}" data-ci="${c}" title="यसपछि स्तम्भ थप्नुहोस्">＋</button>
+        <button class="btn sm icon danger" data-act="delcolat" data-prefix="${prefix}" data-ci="${c}" title="स्तम्भ हटाउनुहोस्" ${ncol>1?'':'disabled'}>✕</button>
+        <button class="btn sm icon" data-act="colright" data-prefix="${prefix}" data-ci="${c}" title="दायाँ सार्नुहोस्" ${c===ncol-1?'disabled':''}>▶</button>
+      </td>`).join('')+'<td class="rn"></td></tr>' : '';
   return `<div class="editor-block"><h4>तालिका डाटा
       <span class="hint">(${(t.rows||[]).length} पंक्ति × ${ncol} स्तम्भ)</span></h4>
-    <table class="subtbl"><thead><tr><th></th>${colhdr}<th></th></tr></thead>
+    <table class="subtbl"><thead><tr><th></th>${colhdr}<th></th></tr>${colctl}</thead>
       <tbody>${head}${body}</tbody></table>
     <div class="row-actions">
       <button class="btn sm" data-act="addrow" data-prefix="${prefix}">＋ पंक्ति</button>
       <button class="btn sm" data-act="addcol" data-prefix="${prefix}" ${single?'':'disabled title=\"बहु-हेडर तालिकामा स्तम्भ थप्न मिल्दैन\"'}>＋ स्तम्भ</button>
-      <button class="btn sm danger" data-act="delcol" data-prefix="${prefix}" ${single&&ncol>1?'':'disabled'}>－ स्तम्भ</button>
     </div>
-    ${single?'':'<p class="hint">यो तालिकामा बहु-हेडर पंक्ति भएकाले स्तम्भ थप/घट अक्षम छ; पाठ र पंक्ति सम्पादन गर्न सकिन्छ।</p>'}
+    ${single?'<p class="hint">प्रत्येक स्तम्भमाथिका ◀ ▶ ले क्रम मिलाउँछ, ＋ ले त्यसपछि नयाँ स्तम्भ थप्छ, ✕ ले हटाउँछ।</p>':'<p class="hint">यो तालिकामा बहु-हेडर पंक्ति भएकाले स्तम्भ थप/घट अक्षम छ; पाठ र पंक्ति सम्पादन गर्न सकिन्छ।</p>'}
   </div>`;
 }
 
@@ -497,7 +566,7 @@ function chartRef(s){ const m=s.match(/(.*?)(\d+)$/); const c=getPath(work, m[1]
 /* structural actions inside modal */
 $('#mBody').addEventListener('click', e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
-  const act=b.dataset.act, i=+b.dataset.i, pfx=b.dataset.prefix||'';
+  const act=b.dataset.act, i=+b.dataset.i, ci=+b.dataset.ci, pfx=b.dataset.prefix||'';
   const tableAt = ()=> getPath(work, pfx? pfx.slice(0,-1):'') || work;
   const chartAt = ()=> getPath(work, pfx? pfx.slice(0,-1):'') || work.chart;
   if(act==='additem'){ (work.items=work.items||[]).push(''); }
@@ -509,13 +578,28 @@ $('#mBody').addEventListener('click', e=>{
   else if(act==='addrow'){ const t=tableAt(); const n=Math.max(...(t.head||[[]]).map(r=>r.length),(t.rows[0]||[]).length,1); t.rows.push(Array(n).fill('')); }
   else if(act==='delrow'){ tableAt().rows.splice(i,1); }
   else if(act==='addcol'){ const t=tableAt(); t.head.forEach(hr=>hr.push({t:''})); t.rows.forEach(r=>r.push('')); }
-  else if(act==='delcol'){ const t=tableAt(); t.head.forEach(hr=>hr.pop()); t.rows.forEach(r=>r.pop()); }
+  else if(act==='addcolat'){ const t=tableAt(); t.head.forEach(hr=>hr.splice(ci+1,0,{t:''})); t.rows.forEach(r=>r.splice(ci+1,0,'')); }
+  else if(act==='delcolat'){ const t=tableAt(); t.head.forEach(hr=>hr.splice(ci,1)); t.rows.forEach(r=>r.splice(ci,1)); }
+  else if(act==='colleft'){ const t=tableAt(); const swap=r=>{ [r[ci-1],r[ci]]=[r[ci],r[ci-1]]; }; t.head.forEach(swap); t.rows.forEach(swap); }
+  else if(act==='colright'){ const t=tableAt(); const swap=r=>{ [r[ci+1],r[ci]]=[r[ci],r[ci+1]]; }; t.head.forEach(swap); t.rows.forEach(swap); }
   else if(act==='addlabel'){ const c=chartAt(); c.labels.push('नयाँ'); c.datasets.forEach(d=>d.data.push(0)); }
   else if(act==='dellabel'){ const c=chartAt(); c.labels.pop(); c.datasets.forEach(d=>d.data.pop()); }
   else if(act==='adddataset'){ const c=chartAt(); c.datasets.push({label:'शृंखला '+(c.datasets.length+1), data:c.labels.map(()=>0)}); }
   else if(act==='deldataset'){ chartAt().datasets.splice(i,1); }
   else if(act==='addchart'){ work.chart={type:'bar', labels:(work.rows||[]).map(r=>String(r[0]||'')), datasets:[{label:'शृंखला', data:(work.rows||[]).map(()=>0)}]}; }
   else if(act==='delchart'){ delete work.chart; }
+  else if(act==='imgupload'){ imgUploadPath=b.dataset.path; $('#imgInput').click(); return; }
+  else if(act==='imgclear'){ setPath(work, b.dataset.path, ''); }
+  else if(act==='jsonedit'){ jsonEdit=true; }
+  else if(act==='jsoncancel'){ jsonEdit=false; }
+  else if(act==='jsonapply'){
+    const ta=$('#jsonText'); let obj;
+    try{ obj=JSON.parse(ta.value); }
+    catch(err){ toast('⚠ अमान्य JSON: '+err.message,1); return; }
+    if(!obj || typeof obj!=='object' || Array.isArray(obj)){ toast('⚠ JSON अब्जेक्ट हुनुपर्छ',1); return; }
+    const id=work._id; work=obj; if(id!==undefined) work._id=id; jsonEdit=false;
+    toast('✔ JSON लागू भयो');
+  }
   else return;
   renderEditor();
 });
@@ -528,6 +612,18 @@ $('#mSave').onclick = async ()=>{
   }catch(e){ toast('⚠ सेभ हुन सकेन',1); }
 };
 function stripId(o){ const {_id, ...rest}=o; return rest; }
+
+/* image upload (photo slides) — stores the file in the DB, sets the path to its URL */
+let imgUploadPath=null;
+$('#imgInput').onchange = async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f||!imgUploadPath||!work) return;
+  const path=imgUploadPath; imgUploadPath=null;
+  const dataUrl=await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(f); });
+  let url=dataUrl;
+  try{ const rec=await api('POST','/api/images',{filename:f.name,mimetype:f.type,data:dataUrl}); url=rec.url; }
+  catch(err){ toast('⚠ अपलोड भएन, इनलाइन राखियो',1); }
+  setPath(work, path, url); renderEditor(); toast('✔ फोटो राखियो');
+};
 
 $('#mClose').onclick=closeEditor;
 $('#mCancel').onclick=closeEditor;

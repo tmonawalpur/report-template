@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "deck-server",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["app.py"],
-      "port": 5000
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["app.py", "5001"],
+      "port": 5001
     }
   ]
 }
