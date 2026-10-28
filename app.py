@@ -27,7 +27,9 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE, "deck.db")
+# DB location is overridable so a deploy (e.g. Railway) can point it at a
+# persistent volume: set DATABASE_PATH=/data/deck.db with a volume at /data.
+DB_PATH = os.environ.get("DATABASE_PATH", os.path.join(BASE, "deck.db"))
 SEED_PATH = os.path.join(BASE, "seed_deck.json")
 FRONTEND = os.path.join(BASE, "presentation.html")
 
@@ -357,8 +359,12 @@ def _migrate():
     insp = inspect(db.engine)
     cols = {c["name"] for c in insp.get_columns("meta")}
     if "theme" not in cols:
-        db.session.execute(text("ALTER TABLE meta ADD COLUMN theme TEXT DEFAULT 'classic'"))
-        db.session.commit()
+        try:
+            db.session.execute(text("ALTER TABLE meta ADD COLUMN theme TEXT DEFAULT 'classic'"))
+            db.session.commit()
+        except Exception:
+            # another worker/process may have added it first; ignore
+            db.session.rollback()
 
 
 with app.app_context():

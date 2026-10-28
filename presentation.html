@@ -64,6 +64,16 @@ button{font-family:inherit}
 @keyframes savePulse{0%,100%{box-shadow:0 0 0 0 rgba(247,179,43,.55)}50%{box-shadow:0 0 0 5px rgba(247,179,43,0)}}
 .tb-group{display:flex; gap:6px; align-items:center}
 .tb-sep{width:1px; height:26px; background:rgba(255,255,255,.15); margin:0 4px}
+/* export dropdown menu */
+.tb-dropdown{position:relative; display:inline-block}
+.tb-menu{position:absolute; top:calc(100% + 6px); right:0; min-width:160px; padding:6px; z-index:60;
+  background:#20202e; border:1px solid rgba(255,255,255,.18); border-radius:10px;
+  box-shadow:0 14px 34px rgba(0,0,0,.45); display:none}
+.tb-menu.show{display:block}
+.tb-menu button{display:flex; width:100%; align-items:center; gap:8px; text-align:left; cursor:pointer;
+  background:transparent; border:none; color:#fff; font:inherit; font-size:13px; font-weight:600;
+  padding:8px 10px; border-radius:7px}
+.tb-menu button:hover{background:rgba(255,255,255,.14)}
 
 /* ---------- Stage ---------- */
 #stageWrap{
@@ -330,8 +340,13 @@ tr.colctl-row th.colctl{background:#eef1ff; border:1px solid var(--line); paddin
 .graph-ctrl label{display:inline-flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; color:var(--navy)}
 .graph-ctrl .sep{width:1px; height:18px; background:var(--line)}
 .graph-ctrl .ghint{font-size:12px; color:var(--muted); font-weight:500; margin-left:auto}
+.graph-ctrl select{font:inherit; font-size:13px; padding:3px 6px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--ink)}
+.graph-ctrl .gaxis{display:inline-flex; align-items:center; gap:4px 12px; flex-wrap:wrap; color:var(--navy)}
+.graph-ctrl .ychk{font-weight:500; gap:5px}
+.graph-ctrl .axlabel{color:var(--navy); font-weight:600}
 .chart-derived-note{position:absolute; left:8px; top:8px; z-index:5; font-size:11px; color:var(--muted);
-  background:#fff; border:1px solid var(--line); border-radius:6px; padding:3px 7px}
+  background:#fff; border:1px solid var(--line); border-radius:6px; padding:3px 7px; display:none}
+body.editing .chart-derived-note{display:block}
 
 /* ---------- JSON panel (frontend slide editor) ---------- */
 #jsonPanel{position:fixed; top:54px; right:0; bottom:0; width:380px; z-index:45;
@@ -518,11 +533,16 @@ html.exported #fsFloat{display:inline-flex}
   <div class="tb-spacer"></div>
   <div class="tb-group">
     <select class="tb-btn" id="themeSelect" title="प्रस्तुति टेम्प्लेट" style="padding:6px 8px"></select>
-    <button class="tb-btn" id="btnExport">⬇ JSON</button>
+    <div class="tb-dropdown" id="exportDrop">
+      <button class="tb-btn" id="btnExportMenu" title="निर्यात गर्नुहोस्">⬇ निर्यात ▾</button>
+      <div class="tb-menu" id="exportMenu">
+        <button data-exp="json">⬇ JSON</button>
+        <button data-exp="pdf">🖨 PDF</button>
+        <button data-exp="pptx">📑 PPTX</button>
+        <button data-exp="html">💾 HTML</button>
+      </div>
+    </div>
     <button class="tb-btn" id="btnImport">⬆ आयात</button>
-    <button class="tb-btn" id="btnPptx">📑 PPTX</button>
-    <button class="tb-btn" id="btnSaveHtml">💾 HTML</button>
-    <button class="tb-btn" id="btnPrint">🖨 PDF</button>
     <button class="tb-btn" id="btnReset">↺ रिसेट</button>
   </div>
   <input type="file" id="fileInput" accept="application/json" style="display:none">
@@ -1192,34 +1212,61 @@ function vGradient(ctx,area,hex,a1,a2){
 
 /* ---------- Table ⇄ chart linking (chart data derived from the table) ---------- */
 function genLinkId(){ return 'lk'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-// Build chart labels/datasets from a table: first column = category labels,
-// each further column = one series (header text = series name).
+function tableNcol(tbl){ const head=(tbl.head&&tbl.head[0])||[]; return Math.max(head.length, ...((tbl.rows||[]).map(r=>r.length)), 0); }
+function tableColName(tbl,c){ const head=(tbl.head&&tbl.head[0])||[]; return String((head[c]&&head[c].t)||('स्तम्भ '+(c+1))); }
+function tableBody(tbl){ const all=tbl.rows||[]; return (tbl.totalRow && all.length>1) ? all.slice(0,-1) : all; } // skip total row
+function toNum(v){ const n=parseFloat(String(v==null?'':v).replace(/,/g,'').trim()); return isNaN(n)?0:n; }
+// How a table feeds its chart. orient 'col' (default): X = a column's cells
+// (one category per row), each selected OTHER column = a series. orient 'row':
+// X = the header-row cells (one category per column), each selected body ROW =
+// a series (named by its first cell). chartX / chartY hold the selections.
+function chartAxes(tbl){
+  const orient = tbl.chartOrient==='row' ? 'row' : 'col';
+  if(orient==='col'){
+    const ncol=tableNcol(tbl);
+    const xi=(Number.isInteger(tbl.chartX) && tbl.chartX>=0 && tbl.chartX<ncol) ? tbl.chartX : 0;
+    let ys=Array.isArray(tbl.chartY) ? tbl.chartY.filter(c=>c>=0 && c<ncol && c!==xi) : null;
+    if(!ys){ ys=[]; for(let c=0;c<ncol;c++) if(c!==xi) ys.push(c); }
+    return {orient, ncol, xi, ys};
+  }
+  const nrow=tableBody(tbl).length;
+  let ys=Array.isArray(tbl.chartY) ? tbl.chartY.filter(r=>r>=0 && r<nrow) : null;
+  if(!ys){ ys=[]; for(let r=0;r<nrow;r++) ys.push(r); }
+  return {orient, nrow, ys};
+}
+// Build chart labels/datasets from a table using the chosen orientation + axes.
 function deriveTableData(tbl){
   const head=(tbl.head&&tbl.head[0])||[];
-  const all=tbl.rows||[];
-  const rows = (tbl.totalRow && all.length>1) ? all.slice(0,-1) : all;   // skip the total row
-  const ncol=Math.max(head.length, ...all.map(r=>r.length), 0);
-  const labels=rows.map(r=>String(r[0]==null?'':r[0]));
-  const datasets=[];
-  for(let c=1;c<ncol;c++){
-    datasets.push({
-      label:String((head[c]&&head[c].t)||('स्तम्भ '+(c+1))),
-      data:rows.map(r=>{ const n=parseFloat(String(r[c]==null?'':r[c]).replace(/,/g,'').trim()); return isNaN(n)?0:n; })
-    });
+  const body=tableBody(tbl);
+  const ncol=tableNcol(tbl);
+  const ax=chartAxes(tbl);
+  if(ax.orient==='row'){
+    // X = header row (columns 1..), each selected body row = a series
+    const cols=[]; for(let c=1;c<ncol;c++) cols.push(c);
+    const labels=cols.map(c=>tableColName(tbl,c));
+    const datasets=ax.ys.map(r=>({
+      label:String(body[r] && body[r][0]!=null ? body[r][0] : ('पंक्ति '+(r+1))),
+      data:cols.map(c=>toNum(body[r] && body[r][c]))
+    }));
+    return {labels, datasets};
   }
+  const labels=body.map(r=>String(r[ax.xi]==null?'':r[ax.xi]));
+  const datasets=ax.ys.map(c=>({ label:tableColName(tbl,c), data:body.map(r=>toNum(r[c])) }));
   return {labels, datasets};
 }
 function isLinkedChart(sl){ return sl.type==='chart' && !!sl.linkedTo; }
 // The source table a chart derives from, or null if it holds its own data
 // (or, for a linked chart, if its source table no longer exists).
+// A chart sitting on a table slide ALWAYS derives from that table — one source
+// of truth, so there is never a separate chart data editor for it.
 function chartSource(sl){
-  if(sl.type==='table' && sl.chart && sl.chartFromTable) return sl;
+  if(sl.type==='table' && sl.chart) return sl;
   if(isLinkedChart(sl)) return DECK.slides.find(s=>s.type==='table' && s.linkId===sl.linkedTo) || null;
   return null;
 }
 // A chart whose data comes from a table — linked charts count even when their
 // source table is missing, so they never fall back to the manual data editor.
-function isDerived(sl){ return (sl.type==='table' && sl.chart && sl.chartFromTable) || isLinkedChart(sl); }
+function isDerived(sl){ return (sl.type==='table' && !!sl.chart) || isLinkedChart(sl); }
 // Write the derived data into slide i's chart config so render + save use it.
 function applyDerived(i){
   const sl=DECK.slides[i]; if(!sl||!sl.chart) return;
@@ -1248,13 +1295,62 @@ function liveUpdateDerived(tableIndex){
 function tableGraphControls(sl,i){
   if(!editing) return '';
   const on=!!sl.chart, mode=sl.chartMode||'inline';
+  let axisUI='';
+  if(on){
+    const ax=chartAxes(sl);
+    const orientSel=`<label>पढाइ:
+      <select data-gact="orient" data-i="${i}">
+        <option value="col"${ax.orient==='col'?' selected':''}>स्तम्भअनुसार</option>
+        <option value="row"${ax.orient==='row'?' selected':''}>पंक्तिअनुसार</option>
+      </select></label>`;
+    let picks='';
+    if(ax.orient==='col'){
+      const xOpts=Array.from({length:ax.ncol},(_,c)=>`<option value="${c}"${c===ax.xi?' selected':''}>${esc(tableColName(sl,c))}</option>`).join('');
+      const yChecks=Array.from({length:ax.ncol},(_,c)=> c===ax.xi?'':
+        `<label class="ychk"><input type="checkbox" data-gact="yaxis" data-i="${i}" data-col="${c}" ${ax.ys.includes(c)?'checked':''}> ${esc(tableColName(sl,c))}</label>`).join('');
+      picks=`<label>X-अक्ष (स्तम्भ): <select data-gact="xaxis" data-i="${i}">${xOpts}</select></label>
+        <span class="gaxis">Y-अक्ष (शृंखला): ${yChecks}</span>`;
+    }else{
+      const body=tableBody(sl);
+      const yChecks=body.map((r,ri)=>
+        `<label class="ychk"><input type="checkbox" data-gact="yrow" data-i="${i}" data-row="${ri}" ${ax.ys.includes(ri)?'checked':''}> ${esc(String(r[0]||('पंक्ति '+(ri+1))))}</label>`).join('');
+      picks=`<span class="axlabel">X-अक्ष: हेडर पंक्ति</span>
+        <span class="gaxis">Y-अक्ष (पंक्ति): ${yChecks}</span>`;
+    }
+    axisUI=`<span class="sep"></span>${orientSel}<span class="sep"></span>${picks}`;
+  }
   return `<div class="graph-ctrl" contenteditable="false">
     <label><input type="checkbox" data-gact="toggle" data-i="${i}" ${on?'checked':''}> 📊 ग्राफ देखाउनुहोस्</label>
     ${on?`<span class="sep"></span>
       <label><input type="radio" name="gmode${i}" data-gact="mode" data-mode="inline" data-i="${i}" ${mode!=='linked'?'checked':''}> उही पृष्ठमा</label>
       <label><input type="radio" name="gmode${i}" data-gact="mode" data-mode="linked" data-i="${i}" ${mode==='linked'?'checked':''}> अलग लिंक स्लाइड</label>
+      ${axisUI}
       <span class="ghint">डाटा तालिकाबाट स्वतः अपडेट हुन्छ</span>`:''}
   </div>`;
+}
+// orientation: reset axis selections so they default sensibly for the new layout
+function setChartOrient(i, orient){
+  const sl=DECK.slides[i]; if(!sl) return;
+  sl.chartOrient = orient==='row' ? 'row' : 'col';
+  delete sl.chartX; delete sl.chartY;
+  markDirty('slides.'+i); render(); show(cur); scheduleSave();
+}
+function setChartX(i, xi){
+  const sl=DECK.slides[i]; if(!sl) return;
+  let ys=Array.isArray(sl.chartY)?sl.chartY.filter(c=>c!==xi):null;
+  sl.chartX=xi;
+  if(!ys || !ys.length) ys=chartAxes(sl).ys;   // recompute default Y (all but new X)
+  sl.chartY=ys;
+  markDirty('slides.'+i); render(); show(cur); scheduleSave();
+}
+function setChartY(i, idx, on){   // idx = column (col mode) or row (row mode) index
+  const sl=DECK.slides[i]; if(!sl) return;
+  let ys=Array.isArray(sl.chartY)?sl.chartY.slice():chartAxes(sl).ys;
+  ys=ys.filter(c=>c!==idx);
+  if(on) ys.push(idx);
+  ys.sort((a,b)=>a-b);
+  sl.chartY=ys;
+  markDirty('slides.'+i); render(); show(cur); scheduleSave();
 }
 function pickChartCfg(c){ c=c||{}; const o={type:c.type||'bar'};
   ['stacked','horizontal','datalabels','dualAxis','sub'].forEach(k=>{ if(c[k]!=null) o[k]=c[k]; }); return o; }
@@ -1310,6 +1406,10 @@ stage.addEventListener('change', e=>{
   const i=+el.dataset.i;
   if(el.dataset.gact==='toggle') setGraph(i, el.checked);
   else if(el.dataset.gact==='mode' && el.checked) setGraphMode(i, el.dataset.mode);
+  else if(el.dataset.gact==='orient') setChartOrient(i, el.value);
+  else if(el.dataset.gact==='xaxis') setChartX(i, +el.value);
+  else if(el.dataset.gact==='yaxis') setChartY(i, +el.dataset.col, el.checked);
+  else if(el.dataset.gact==='yrow') setChartY(i, +el.dataset.row, el.checked);
 });
 
 function buildChart(i,sl){
@@ -1719,9 +1819,9 @@ document.addEventListener('webkitfullscreenchange', ()=>setTimeout(fit,60));
 /* ---------- Export / Import / Save HTML / Print / Reset ---------- */
 // strip server-only ids so the exported/baked deck is clean JSON
 function cleanDeck(){ return JSON.parse(JSON.stringify(DECK, (k,v)=> k==='_id'?undefined:v)); }
-document.getElementById('btnExport').onclick=()=>{
+function exportJSON(){
   downloadBlob(JSON.stringify(cleanDeck(),null,2),'presentation-data.json','application/json'); toast('JSON निर्यात भयो');
-};
+}
 document.getElementById('btnImport').onclick=()=>document.getElementById('fileInput').click();
 document.getElementById('fileInput').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; const r=new FileReader();
@@ -1733,7 +1833,7 @@ document.getElementById('fileInput').onchange=e=>{
   }catch(err){ alert('अमान्य JSON फाइल'); } };
   r.readAsText(f); e.target.value='';
 };
-document.getElementById('btnSaveHtml').onclick=()=>{
+function exportHTML(){
   // embed the current deck as the new original so the exported stand-alone file
   // opens with edits baked in even without the backend. The `exported` class
   // hides the toolbar and lets the stage use the whole screen in the saved file.
@@ -1745,12 +1845,21 @@ document.getElementById('btnSaveHtml').onclick=()=>{
   document.documentElement.classList.remove('exported');
   downloadBlob('<!DOCTYPE html>\n'+html,'presentation.html','text/html');
   toast('HTML फाइल डाउनलोड भयो');
-};
-document.getElementById('btnPrint').onclick=()=>{
+}
+function printPDF(){
   // ensure every chart is rendered so it appears in the printed PDF
   DECK.slides.forEach((sl,i)=>{ if(sl.chart) buildChart(i,sl); });
   setTimeout(()=>window.print(), 400);
-};
+}
+// Export dropdown menu
+const exportMenu=document.getElementById('exportMenu');
+document.getElementById('btnExportMenu').onclick=e=>{ e.stopPropagation(); exportMenu.classList.toggle('show'); };
+exportMenu.addEventListener('click', e=>{
+  const b=e.target.closest('[data-exp]'); if(!b) return;
+  exportMenu.classList.remove('show');
+  ({json:exportJSON, pdf:printPDF, pptx:exportPptx, html:exportHTML}[b.dataset.exp]||(()=>{}))();
+});
+document.addEventListener('click', e=>{ if(!e.target.closest('#exportDrop')) exportMenu.classList.remove('show'); });
 document.getElementById('btnReset').onclick=async ()=>{
   if(!confirm('मूल सामग्रीमा फर्काउने? सबै परिवर्तन हट्नेछन्।')) return;
   if(SERVER){ await api('POST','/api/reset'); await reloadDeck(); }
@@ -1847,7 +1956,6 @@ async function exportPptx(){
     toast('✔ PPTX डाउनलोड भयो');
   }catch(err){ console.error(err); toast('⚠ PPTX बनाउन सकिएन'); }
 }
-document.getElementById('btnPptx').onclick=exportPptx;
 
 function downloadBlob(content,name,type){
   const b=new Blob([content],{type}); const u=URL.createObjectURL(b);
