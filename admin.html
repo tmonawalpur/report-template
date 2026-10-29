@@ -81,6 +81,10 @@ table.list tr:hover td{background:#f8f9fd}
 .tag.twotable{background:#fdeaef;color:#a4213c} .tag.chart{background:#e9f6fb;color:#1c6d86}
 .tag.thanks{background:#f0eafd;color:#6b34b8}
 .num{color:var(--muted); font-weight:700; width:34px}
+.grip{cursor:grab; color:var(--muted); width:22px; text-align:center; user-select:none; font-size:15px}
+.grip:active{cursor:grabbing}
+table.list tr.dragging{opacity:.4}
+table.list tr.dragover td{border-top:2px solid var(--navy)}
 .mini{font-size:12px; color:var(--muted)}
 .acts{display:flex; gap:5px; justify-content:flex-end}
 td.actcol{width:1%; white-space:nowrap}
@@ -295,7 +299,8 @@ function slideSummary(s){
 }
 function slidesCardHTML(){
   const rows = DECK.slides.map((s,i)=>`
-    <tr data-i="${i}">
+    <tr data-i="${i}" ${CAN_EDIT?'draggable="true"':''}>
+      <td class="grip" title="तान्नुहोस्">${CAN_EDIT?'⠿':''}</td>
       <td class="num">${i+1}</td>
       <td><span class="tag ${s.type}">${TYPE_LABELS[s.type]||s.type}</span></td>
       <td>${esc(s.title|| (s.type==='thanks'? s.text : s.type==='title'? '(शीर्षक स्लाइडले मेटाडाटा प्रयोग गर्छ)':'—'))}</td>
@@ -319,7 +324,7 @@ function slidesCardHTML(){
         <span class="hint">अन्त्यमा थपिन्छ — त्यसपछि क्रम मिलाउन ▲▼ प्रयोग गर्नुहोस्।</span>
       </div>
       <table class="list">
-        <thead><tr><th>#</th><th>प्रकार</th><th>शीर्षक</th><th>सारांश</th><th style="text-align:right">कार्य</th></tr></thead>
+        <thead><tr><th></th><th>#</th><th>प्रकार</th><th>शीर्षक</th><th>सारांश</th><th style="text-align:right">कार्य</th></tr></thead>
         <tbody id="slideRows">${rows}</tbody>
       </table>
     </div>
@@ -345,10 +350,43 @@ function wireSlides(){
       try{ await api('POST',API_BASE+'/slides/'+s._id+'/duplicate'); await reload(); toast('✔ कपी भयो'); }catch(e){ toast('⚠ कपी हुन सकेन',1); }
     } else if(act==='up' || act==='down'){
       const j = act==='up'? i-1 : i+1; if(j<0||j>=DECK.slides.length) return;
-      [DECK.slides[i],DECK.slides[j]]=[DECK.slides[j],DECK.slides[i]];
-      try{ await api('POST',API_BASE+'/slides/reorder',{order:DECK.slides.map(x=>x._id)}); await reload(); }
-      catch(e){ toast('⚠ क्रम मिलेन',1); }
+      await moveSlide(i,j);
     }
+  });
+  if(CAN_EDIT) wireDrag();
+}
+
+async function moveSlide(from,to){
+  if(from===to) return;
+  const [moved]=DECK.slides.splice(from,1);
+  DECK.slides.splice(to,0,moved);
+  try{ await api('POST',API_BASE+'/slides/reorder',{order:DECK.slides.map(x=>x._id)}); await reload(); }
+  catch(e){ toast('⚠ क्रम मिलेन',1); await reload(); }
+}
+
+function wireDrag(){
+  const tbody=$('#slideRows'); let dragI=-1;
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    tr.addEventListener('dragstart', e=>{
+      dragI=+tr.dataset.i; tr.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+    });
+    tr.addEventListener('dragend', ()=>{
+      tr.classList.remove('dragging');
+      tbody.querySelectorAll('tr').forEach(r=>r.classList.remove('dragover'));
+    });
+    tr.addEventListener('dragover', e=>{
+      e.preventDefault(); e.dataTransfer.dropEffect='move';
+      tbody.querySelectorAll('tr').forEach(r=>r.classList.remove('dragover'));
+      if(+tr.dataset.i!==dragI) tr.classList.add('dragover');
+    });
+    tr.addEventListener('drop', async e=>{
+      e.preventDefault();
+      const to=+tr.dataset.i;
+      tr.classList.remove('dragover');
+      if(dragI>=0 && dragI!==to) await moveSlide(dragI,to);
+      dragI=-1;
+    });
   });
 }
 async function reload(){ const _d = await api('GET',API_BASE); DECK={meta:_d.meta||{},slides:_d.slides||[]}; renderApp(); }

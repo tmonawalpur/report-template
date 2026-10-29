@@ -19,6 +19,40 @@ Open <http://127.0.0.1:5000> for the presentation, or
 The toolbar shows a **● सर्भर** pill when the page is talking to the API, or
 **○ अफलाइन** when running stand-alone from `file://`.
 
+## Database & deploy (Railway)
+
+The app chooses its database from the environment (`app.py` → `_database_uri()`):
+
+- **`DATABASE_URL` set** → use that managed database. A `postgres://` /
+  `postgresql://` URL is rewritten to `postgresql+psycopg2://` automatically.
+- **not set** (local dev) → a SQLite file, `deck.db`, overridable with
+  `DATABASE_PATH`.
+
+Use a managed PostgreSQL database in production. Its data lives **outside** the
+container, so — unlike the local SQLite file — it survives every deploy. (The
+container filesystem on Railway is ephemeral and rebuilt from the repo on each
+deploy; `*.db` files are not committed, so never rely on SQLite there.)
+
+**Railway setup:**
+
+1. Add a **PostgreSQL** database to the project (New → Database → PostgreSQL).
+2. In the web service's **Variables**, reference the DB URL — add
+   `DATABASE_URL = ${{Postgres.DATABASE_URL}}` (Railway exposes the Postgres
+   service's connection string as a variable).
+3. Set a real **`SECRET_KEY`** (defaults to `dev-secret-change-me`; it signs
+   login sessions, so change it in production).
+4. Deploy. On first boot `db.create_all()` builds the tables and
+   `seed_demo_if_empty()` seeds the demo deck from `seed_deck.json`.
+
+`psycopg2-binary` is in `requirements.txt` for the Postgres driver. No schema
+changes are needed — the `Text` (JSON) and `LargeBinary` (image) columns map to
+unlimited `text` / `bytea` on PostgreSQL.
+
+> **Migrating existing server data:** if a previous SQLite deployment already
+> holds real data, dump it and load it into the new Postgres database before (or
+> right after) switching `DATABASE_URL` — the two stores are separate, so simply
+> setting the variable starts Postgres empty (freshly seeded).
+
 ## Data model (SQLAlchemy)
 
 | Model  | Purpose |
@@ -111,7 +145,8 @@ presentation.html Frontend (served at /, also works stand-alone)
 admin.html        Admin panel / CMS (served at /admin)
 static/emblem.png Government emblem shown on the title slide (swap to rebrand)
 requirements.txt  Python dependencies
-deck.db           SQLite database (created at runtime)
+railway.json      Railway deploy config (build + gunicorn start command)
+deck.db           SQLite database (created at runtime; not committed — see Deploy)
 ```
 
 > **Note:** the dev server runs with `use_reloader=False`. The Flask auto-reloader

@@ -30,14 +30,36 @@ from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-# DB location is overridable so a deploy (e.g. Railway) can point it at a
-# persistent volume: set DATABASE_PATH=/data/deck.db with a volume at /data.
-DB_PATH = os.environ.get("DATABASE_PATH", os.path.join(BASE, "deck.db"))
 SEED_PATH = os.path.join(BASE, "seed_deck.json")
 FRONTEND = os.path.join(BASE, "presentation.html")
 
+
+def _database_uri():
+    """Pick the database.
+
+    In production set DATABASE_URL to a managed database (e.g. the PostgreSQL
+    service Railway provides) — its data lives outside the container, so it
+    survives every deploy. Locally, with no DATABASE_URL, we fall back to a
+    SQLite file (overridable via DATABASE_PATH).
+    """
+    url = os.environ.get("DATABASE_URL", "").strip()
+    if url:
+        # Railway/Heroku hand out "postgres://…"; SQLAlchemy wants the
+        # explicit driver scheme "postgresql+psycopg2://…".
+        if url.startswith("postgres://"):
+            url = "postgresql+psycopg2://" + url[len("postgres://"):]
+        elif url.startswith("postgresql://"):
+            url = "postgresql+psycopg2://" + url[len("postgresql://"):]
+        return url
+    db_path = os.environ.get("DATABASE_PATH", os.path.join(BASE, "deck.db"))
+    return "sqlite:///" + db_path.replace("\\", "/")
+
+
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_PATH.replace("\\", "/")
+app.config["SQLALCHEMY_DATABASE_URI"] = _database_uri()
+# Recycle stale pooled connections (managed DBs drop idle ones) and check
+# liveness before use, so a dropped connection doesn't surface as a 500.
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True, "pool_recycle": 280}
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["JSON_AS_ASCII"] = False  # keep Devanagari readable in responses
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")

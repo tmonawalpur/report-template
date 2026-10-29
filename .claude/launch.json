@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "deck-server",
-      "runtimeExecutable": ".venv/bin/python",
-      "runtimeArgs": ["app.py", "5001"],
-      "port": 5001
+      "name": "report-template",
+      "runtimeExecutable": ".venv/bin/python3",
+      "runtimeArgs": ["app.py", "5055"],
+      "port": 5055
     }
   ]
 }

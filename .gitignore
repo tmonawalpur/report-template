@@ -3,3 +3,7 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# SQLite database — never ship local/seed data over production
+*.db
+*.db.bak-*
