@@ -639,10 +639,14 @@ def _migrate():
         db.session.commit()
 
 
-with app.app_context():
-    db.create_all()
-    _migrate()
-    seed_demo_if_empty()
+# Normal startup initializes and seeds the DB. The migration script imports this
+# module only for its models/engine and sets AUTO_INIT_DB=0 to skip seeding, so
+# it doesn't create a demo deck in the target before importing real data.
+if os.environ.get("AUTO_INIT_DB", "1") != "0":
+    with app.app_context():
+        db.create_all()
+        _migrate()
+        seed_demo_if_empty()
 
 
 if __name__ == "__main__":
