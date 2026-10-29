@@ -1,8 +1,9 @@
 """
-Flask + SQLite backend for the Annual Review slide deck.
+Flask + SQLite backend for the multi-user slide-deck app.
 
-Serves the presentation frontend and a small REST API that persists the deck
-(metadata + ordered slides) in a SQLite database via SQLAlchemy.
+Each user owns their own decks. A deck can be marked public, which lists it in
+the gallery and lets anyone view it read-only; editing always requires being
+the signed-in owner.
 
 Run:
     pip install -r requirements.txt
@@ -11,20 +12,22 @@ Then open http://127.0.0.1:5000
 
 Data model
 ----------
-Meta   : a single row (id=1) holding the deck-wide header text.
-Slide  : one row per slide, ordered by `position`. Slide-type specific
-         content (paras / items / head / rows / chart / …) is stored as a
-         JSON blob in `content`, which keeps the schema flexible while the
-         core fields (position / type / title) stay first-class columns.
+User   : an account (username / email / password hash).
+Deck   : a presentation owned by a user (or ownerless demo). Holds the deck-wide
+         header metadata + theme, a title, and a public flag.
+Slide  : one row per slide, scoped to a deck and ordered by `position`. Type-
+         specific content lives in the `content` JSON blob.
+Image  : an uploaded image blob (optionally owned by a user).
 """
 import base64
 import binascii
 import json
 import os
 
-from flask import Flask, request, jsonify, send_file, abort
+from flask import Flask, request, jsonify, send_file, abort, session
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
+from werkzeug.security import generate_password_hash, check_password_hash
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 # DB location is overridable so a deploy (e.g. Railway) can point it at a
@@ -37,19 +40,36 @@ app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_PATH.replace("\\", "/")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["JSON_AS_ASCII"] = False  # keep Devanagari readable in responses
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 db = SQLAlchemy(app)
+
+META_FIELDS = ["province", "ministry", "office", "officeFull", "fy", "reportTitle", "theme"]
 
 
 # --------------------------------------------------------------------------- #
 #  Models
 # --------------------------------------------------------------------------- #
-META_FIELDS = ["province", "ministry", "office", "officeFull", "fy", "reportTitle", "theme"]
-
-
-class Meta(db.Model):
-    """Deck-wide header metadata. Kept as a singleton row (id == 1)."""
-    __tablename__ = "meta"
+class User(db.Model):
+    __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(200), unique=True, nullable=False)
+    password_hash = db.Column(db.Text, nullable=False)
+    created = db.Column(db.DateTime, server_default=func.now())
+
+    def public_dict(self):
+        return {"id": self.id, "username": self.username, "email": self.email}
+
+
+class Deck(db.Model):
+    __tablename__ = "decks"
+    id = db.Column(db.Integer, primary_key=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey("users.id"), index=True)  # NULL = demo
+    title = db.Column(db.Text, default="")
+    is_public = db.Column(db.Boolean, default=False, nullable=False)
+    created = db.Column(db.DateTime, server_default=func.now())
+    updated = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+    # deck-wide header metadata
     province = db.Column(db.Text, default="")
     ministry = db.Column(db.Text, default="")
     office = db.Column(db.Text, default="")
@@ -58,19 +78,48 @@ class Meta(db.Model):
     reportTitle = db.Column(db.Text, default="")
     theme = db.Column(db.Text, default="classic")
 
-    def to_dict(self):
+    def display_title(self):
+        return (self.title or self.reportTitle or "शीर्षकविहीन प्रस्तुति").strip()
+
+    def meta_dict(self):
         return {k: (getattr(self, k) or "") for k in META_FIELDS}
 
-    def update(self, data):
+    def update_meta(self, data):
         for k in META_FIELDS:
             if k in data and data[k] is not None:
                 setattr(self, k, data[k])
 
+    def slides_ordered(self):
+        return Slide.query.filter_by(deck_id=self.id).order_by(Slide.position).all()
+
+    def summary(self, owner_name=None):
+        return {
+            "id": self.id,
+            "title": self.display_title(),
+            "is_public": bool(self.is_public),
+            "owner": owner_name,
+            "owner_id": self.owner_id,
+            "slides": Slide.query.filter_by(deck_id=self.id).count(),
+            "updated": self.updated.isoformat() if self.updated else None,
+        }
+
+    def full_dict(self, can_edit, owner_name=None):
+        return {
+            "id": self.id,
+            "title": self.display_title(),
+            "is_public": bool(self.is_public),
+            "owner": owner_name,
+            "owner_id": self.owner_id,
+            "can_edit": bool(can_edit),
+            "meta": self.meta_dict(),
+            "slides": [s.to_dict() for s in self.slides_ordered()],
+        }
+
 
 class Slide(db.Model):
-    """A single slide. Flexible, type-specific data lives in `content` (JSON)."""
     __tablename__ = "slides"
     id = db.Column(db.Integer, primary_key=True)
+    deck_id = db.Column(db.Integer, db.ForeignKey("decks.id"), index=True)
     position = db.Column(db.Integer, nullable=False, default=0, index=True)
     type = db.Column(db.String(40), nullable=False, default="list")
     title = db.Column(db.Text, default="")
@@ -83,7 +132,6 @@ class Slide(db.Model):
             return {}
 
     def set_from(self, data):
-        """Populate columns + content JSON from a full slide dict."""
         self.type = data.get("type", self.type or "list")
         self.title = data.get("title") or ""
         rest = {k: v for k, v in data.items()
@@ -100,9 +148,9 @@ class Slide(db.Model):
 
 
 class Image(db.Model):
-    """An uploaded image, stored as a BLOB so the deck is self-contained."""
     __tablename__ = "images"
     id = db.Column(db.Integer, primary_key=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey("users.id"), index=True)
     filename = db.Column(db.Text, default="")
     mimetype = db.Column(db.String(80), default="image/png")
     data = db.Column(db.LargeBinary, nullable=False)
@@ -123,191 +171,346 @@ class Image(db.Model):
 
 
 # --------------------------------------------------------------------------- #
-#  Serialization / seeding helpers
+#  Auth helpers
 # --------------------------------------------------------------------------- #
-def deck_dict():
-    meta = db.session.get(Meta, 1)
-    slides = Slide.query.order_by(Slide.position).all()
-    return {
-        "meta": meta.to_dict() if meta else {k: "" for k in META_FIELDS},
-        "slides": [s.to_dict() for s in slides],
-    }
+def current_user():
+    uid = session.get("uid")
+    return db.session.get(User, uid) if uid else None
 
 
-def _load_deck(data):
-    """Replace all rows in the DB with the given deck dict."""
-    Slide.query.delete()
-    Meta.query.delete()
-    meta = Meta(id=1)
-    meta.update(data.get("meta", {}))
-    db.session.add(meta)
-    for i, sl in enumerate(data.get("slides", [])):
-        s = Slide(position=i)
-        s.set_from(sl)
-        db.session.add(s)
-    db.session.commit()
+def owner_name_of(deck):
+    if deck.owner_id is None:
+        return None
+    u = db.session.get(User, deck.owner_id)
+    return u.username if u else None
 
 
-def seed_if_empty(force=False):
-    if not force and Slide.query.first() is not None:
-        return
-    with open(SEED_PATH, encoding="utf-8") as fh:
-        _load_deck(json.load(fh))
+def require_login():
+    u = current_user()
+    if not u:
+        abort(401, "login required")
+    return u
 
 
-def _shift(from_pos, delta):
-    """Shift positions of all slides at/after `from_pos` by `delta`."""
-    Slide.query.filter(Slide.position >= from_pos).update(
+def get_viewable_deck(did):
+    """A deck the caller may VIEW: public, or owned by the caller."""
+    deck = db.session.get(Deck, did) or abort(404)
+    u = current_user()
+    if deck.is_public or (u and deck.owner_id == u.id):
+        return deck
+    abort(404)  # hide existence of private decks
+
+
+def get_owned_deck(did):
+    """A deck the caller may EDIT: must be the signed-in owner."""
+    u = require_login()
+    deck = db.session.get(Deck, did) or abort(404)
+    if deck.owner_id != u.id:
+        abort(403, "not your presentation")
+    return deck
+
+
+def _shift(deck_id, from_pos, delta):
+    Slide.query.filter(Slide.deck_id == deck_id, Slide.position >= from_pos).update(
         {Slide.position: Slide.position + delta}, synchronize_session=False)
 
 
+def _touch(deck):
+    deck.updated = func.now()
+
+
 # --------------------------------------------------------------------------- #
-#  Routes — frontend
+#  Seeding
+# --------------------------------------------------------------------------- #
+def _new_deck_slides(deck, slides):
+    for i, sl in enumerate(slides):
+        s = Slide(deck_id=deck.id, position=i)
+        s.set_from(sl)
+        db.session.add(s)
+
+
+def seed_demo_if_empty():
+    """On a fresh DB (no decks), seed the bundled deck as an ownerless public demo."""
+    if Deck.query.first() is not None:
+        return
+    with open(SEED_PATH, encoding="utf-8") as fh:
+        data = json.load(fh)
+    deck = Deck(owner_id=None, is_public=True)
+    deck.update_meta(data.get("meta", {}))
+    deck.title = deck.reportTitle or "नमुना प्रस्तुति"
+    db.session.add(deck)
+    db.session.flush()
+    _new_deck_slides(deck, data.get("slides", []))
+    db.session.commit()
+
+
+# --------------------------------------------------------------------------- #
+#  Routes — pages
 # --------------------------------------------------------------------------- #
 @app.route("/")
-def index():
+def gallery_page():
+    return send_file(os.path.join(BASE, "gallery.html"))
+
+
+@app.route("/view")
+@app.route("/p/<int:did>")
+def view_page(did=None):
     return send_file(FRONTEND)
 
 
 @app.route("/admin")
-def admin():
+def admin_page():
     return send_file(os.path.join(BASE, "admin.html"))
 
 
 # --------------------------------------------------------------------------- #
-#  Routes — API
+#  Routes — auth
 # --------------------------------------------------------------------------- #
-@app.get("/api/deck")
-def api_get_deck():
-    return jsonify(deck_dict())
-
-
-@app.put("/api/meta")
-def api_update_meta():
-    meta = db.session.get(Meta, 1) or Meta(id=1)
-    meta.update(request.get_json(force=True) or {})
-    db.session.add(meta)
+@app.post("/api/auth/register")
+def api_register():
+    b = request.get_json(force=True) or {}
+    username = (b.get("username") or "").strip()
+    email = (b.get("email") or "").strip().lower()
+    password = b.get("password") or ""
+    if len(username) < 3 or "@" not in email or len(password) < 6:
+        abort(400, "username ≥3, valid email, password ≥6 required")
+    if User.query.filter_by(username=username).first():
+        abort(409, "username taken")
+    if User.query.filter_by(email=email).first():
+        abort(409, "email already registered")
+    u = User(username=username, email=email,
+             password_hash=generate_password_hash(password))
+    db.session.add(u)
     db.session.commit()
-    return jsonify(meta.to_dict())
+    session["uid"] = u.id
+    return jsonify(u.public_dict()), 201
 
 
-@app.post("/api/slides")
-def api_add_slide():
+@app.post("/api/auth/login")
+def api_login():
+    b = request.get_json(force=True) or {}
+    ident = (b.get("username") or b.get("email") or "").strip()
+    password = b.get("password") or ""
+    u = (User.query.filter_by(username=ident).first()
+         or User.query.filter_by(email=ident.lower()).first())
+    if not u or not check_password_hash(u.password_hash, password):
+        abort(401, "invalid credentials")
+    session["uid"] = u.id
+    return jsonify(u.public_dict())
+
+
+@app.post("/api/auth/logout")
+def api_logout():
+    session.pop("uid", None)
+    return ("", 204)
+
+
+@app.get("/api/me")
+def api_me():
+    u = current_user()
+    return jsonify({"user": u.public_dict() if u else None})
+
+
+# --------------------------------------------------------------------------- #
+#  Routes — decks
+# --------------------------------------------------------------------------- #
+@app.get("/api/public/decks")
+def api_public_decks():
+    decks = Deck.query.filter_by(is_public=True).order_by(Deck.updated.desc()).all()
+    return jsonify([d.summary(owner_name_of(d)) for d in decks])
+
+
+@app.get("/api/decks")
+def api_my_decks():
+    u = require_login()
+    decks = Deck.query.filter_by(owner_id=u.id).order_by(Deck.updated.desc()).all()
+    return jsonify([d.summary(u.username) for d in decks])
+
+
+@app.post("/api/decks")
+def api_create_deck():
+    u = require_login()
+    b = request.get_json(silent=True) or {}
+    title = (b.get("title") or "नयाँ प्रस्तुति").strip()
+    deck = Deck(owner_id=u.id, is_public=False, title=title, reportTitle=title)
+    db.session.add(deck)
+    db.session.flush()
+    _new_deck_slides(deck, [
+        {"type": "title"},
+        {"type": "list", "title": "नयाँ सूची", "cols": 1, "big": True, "items": ["नयाँ बुँदा"]},
+        {"type": "thanks", "text": "धन्यवाद !"},
+    ])
+    db.session.commit()
+    return jsonify(deck.summary(u.username)), 201
+
+
+@app.get("/api/decks/<int:did>")
+def api_get_deck(did):
+    deck = get_viewable_deck(did)
+    u = current_user()
+    can_edit = bool(u and deck.owner_id == u.id)
+    return jsonify(deck.full_dict(can_edit, owner_name_of(deck)))
+
+
+@app.put("/api/decks/<int:did>")
+def api_update_deck(did):
+    """Update deck settings (title / public flag) and/or meta."""
+    deck = get_owned_deck(did)
+    b = request.get_json(force=True) or {}
+    if "title" in b and b["title"] is not None:
+        deck.title = b["title"]
+    if "is_public" in b:
+        deck.is_public = bool(b["is_public"])
+    if isinstance(b.get("meta"), dict):
+        deck.update_meta(b["meta"])
+    _touch(deck)
+    db.session.commit()
+    return jsonify(deck.summary(owner_name_of(deck)))
+
+
+@app.delete("/api/decks/<int:did>")
+def api_delete_deck(did):
+    deck = get_owned_deck(did)
+    Slide.query.filter_by(deck_id=deck.id).delete()
+    db.session.delete(deck)
+    db.session.commit()
+    return ("", 204)
+
+
+@app.put("/api/decks/<int:did>/meta")
+def api_update_meta(did):
+    deck = get_owned_deck(did)
+    deck.update_meta(request.get_json(force=True) or {})
+    _touch(deck)
+    db.session.commit()
+    return jsonify(deck.meta_dict())
+
+
+# --------------------------------------------------------------------------- #
+#  Routes — slides (scoped to a deck, owner only)
+# --------------------------------------------------------------------------- #
+@app.post("/api/decks/<int:did>/slides")
+def api_add_slide(did):
+    deck = get_owned_deck(did)
     body = request.get_json(force=True) or {}
     slide = body.get("slide") or {}
-    after = body.get("after")  # id of the slide to insert *after*, or None
-
+    after = body.get("after")
     if after is None:
-        pos = (db.session.query(func.max(Slide.position)).scalar() or -1) + 1
+        pos = (db.session.query(func.max(Slide.position))
+               .filter(Slide.deck_id == deck.id).scalar() or -1) + 1
     else:
         ref = db.session.get(Slide, after)
-        pos = (ref.position + 1) if ref else 0
-        _shift(pos, +1)
-
-    s = Slide(position=pos)
+        pos = (ref.position + 1) if ref and ref.deck_id == deck.id else 0
+        _shift(deck.id, pos, +1)
+    s = Slide(deck_id=deck.id, position=pos)
     s.set_from(slide)
     db.session.add(s)
+    _touch(deck)
     db.session.commit()
     return jsonify(s.to_dict()), 201
 
 
-@app.put("/api/slides/<int:sid>")
-def api_update_slide(sid):
-    s = db.session.get(Slide, sid) or abort(404)
+def _deck_slide(deck, sid):
+    s = db.session.get(Slide, sid)
+    if not s or s.deck_id != deck.id:
+        abort(404)
+    return s
+
+
+@app.put("/api/decks/<int:did>/slides/<int:sid>")
+def api_update_slide(did, sid):
+    deck = get_owned_deck(did)
+    s = _deck_slide(deck, sid)
     s.set_from(request.get_json(force=True) or {})
+    _touch(deck)
     db.session.commit()
     return jsonify(s.to_dict())
 
 
-@app.delete("/api/slides/<int:sid>")
-def api_delete_slide(sid):
-    s = db.session.get(Slide, sid) or abort(404)
+@app.delete("/api/decks/<int:did>/slides/<int:sid>")
+def api_delete_slide(did, sid):
+    deck = get_owned_deck(did)
+    s = _deck_slide(deck, sid)
     pos = s.position
     db.session.delete(s)
-    _shift(pos + 1, -1)
+    _shift(deck.id, pos + 1, -1)
+    _touch(deck)
     db.session.commit()
     return jsonify({"ok": True})
 
 
-@app.post("/api/slides/<int:sid>/duplicate")
-def api_duplicate_slide(sid):
-    s = db.session.get(Slide, sid) or abort(404)
+@app.post("/api/decks/<int:did>/slides/<int:sid>/duplicate")
+def api_duplicate_slide(did, sid):
+    deck = get_owned_deck(did)
+    s = _deck_slide(deck, sid)
     pos = s.position + 1
-    _shift(pos, +1)
-    clone = Slide(position=pos, type=s.type, title=s.title, content=s.content)
+    _shift(deck.id, pos, +1)
+    clone = Slide(deck_id=deck.id, position=pos, type=s.type, title=s.title, content=s.content)
     db.session.add(clone)
+    _touch(deck)
     db.session.commit()
     return jsonify(clone.to_dict()), 201
 
 
-@app.post("/api/slides/reorder")
-def api_reorder():
+@app.post("/api/decks/<int:did>/slides/reorder")
+def api_reorder(did):
+    deck = get_owned_deck(did)
     order = (request.get_json(force=True) or {}).get("order", [])
     for i, sid in enumerate(order):
-        Slide.query.filter_by(id=sid).update({Slide.position: i},
-                                             synchronize_session=False)
+        Slide.query.filter_by(id=sid, deck_id=deck.id).update(
+            {Slide.position: i}, synchronize_session=False)
+    _touch(deck)
     db.session.commit()
-    return jsonify(deck_dict())
+    return jsonify(deck.full_dict(True, owner_name_of(deck)))
 
 
-@app.put("/api/deck")
-def api_save_deck():
-    """Bulk 'save all': update meta + upsert every slide in one transaction,
-    preserving existing ids, re-applying order, and dropping removed slides."""
+@app.put("/api/decks/<int:did>/save")
+def api_save_deck(did):
+    """Bulk save: meta + upsert every slide, preserving ids, order, deletions."""
+    deck = get_owned_deck(did)
     data = request.get_json(force=True) or {}
-    meta = db.session.get(Meta, 1) or Meta(id=1)
-    meta.update(data.get("meta", {}))
-    db.session.add(meta)
-
+    if isinstance(data.get("meta"), dict):
+        deck.update_meta(data["meta"])
     incoming = data.get("slides", [])
-    # Safety: never let a meta-only / empty payload delete every slide.
     if not incoming:
+        _touch(deck)
         db.session.commit()
-        return jsonify(deck_dict())
-
-    existing = {s.id: s for s in Slide.query.all()}
-    keep_ids = {sl.get("_id") for sl in incoming if sl.get("_id") is not None}
+        return jsonify(deck.full_dict(True, owner_name_of(deck)))
+    existing = {s.id: s for s in Slide.query.filter_by(deck_id=deck.id).all()}
+    keep = {sl.get("_id") for sl in incoming if sl.get("_id") is not None}
     for sid, s in existing.items():
-        if sid not in keep_ids:
+        if sid not in keep:
             db.session.delete(s)
-
     for i, sl in enumerate(incoming):
         s = existing.get(sl.get("_id"))
         if s is None:
-            s = Slide()
+            s = Slide(deck_id=deck.id)
             db.session.add(s)
         s.position = i
         s.set_from(sl)
-
+    _touch(deck)
     db.session.commit()
-    return jsonify(deck_dict())
+    return jsonify(deck.full_dict(True, owner_name_of(deck)))
 
 
-@app.post("/api/import")
-def api_import():
-    _load_deck(request.get_json(force=True) or {})
-    return jsonify(deck_dict())
-
-
-@app.post("/api/reset")
-def api_reset():
-    seed_if_empty(force=True)
-    return jsonify(deck_dict())
+@app.post("/api/decks/<int:did>/import")
+def api_import(did):
+    deck = get_owned_deck(did)
+    data = request.get_json(force=True) or {}
+    Slide.query.filter_by(deck_id=deck.id).delete()
+    deck.update_meta(data.get("meta", {}))
+    _new_deck_slides(deck, data.get("slides", []))
+    _touch(deck)
+    db.session.commit()
+    return jsonify(deck.full_dict(True, owner_name_of(deck)))
 
 
 # --------------------------------------------------------------------------- #
-#  Routes — Images
+#  Routes — images
 # --------------------------------------------------------------------------- #
-@app.get("/api/images")
-def api_list_images():
-    imgs = Image.query.order_by(Image.id.desc()).all()
-    return jsonify([im.meta_dict() for im in imgs])
-
-
 @app.post("/api/images")
 def api_upload_image():
-    """Accepts either multipart form (field 'file') or JSON {filename, mimetype,
-    data} where `data` is base64 (optionally a full data: URL)."""
+    u = require_login()
     filename, mimetype, raw = "", "image/png", None
     if request.files.get("file"):
         f = request.files["file"]
@@ -329,7 +532,7 @@ def api_upload_image():
             raw = None
     if not raw:
         abort(400, "no image data")
-    im = Image(filename=filename, mimetype=mimetype, data=raw)
+    im = Image(owner_id=u.id, filename=filename, mimetype=mimetype, data=raw)
     db.session.add(im)
     db.session.commit()
     return jsonify(im.meta_dict()), 201
@@ -343,42 +546,84 @@ def api_get_image(iid):
 
 @app.delete("/api/images/<int:iid>")
 def api_delete_image(iid):
+    u = require_login()
     im = db.session.get(Image, iid)
-    if im:
+    if im and (im.owner_id is None or im.owner_id == u.id):
         db.session.delete(im)
         db.session.commit()
     return ("", 204)
 
 
 # --------------------------------------------------------------------------- #
-#  Bootstrap
+#  Error handler -> JSON for API routes
+# --------------------------------------------------------------------------- #
+@app.errorhandler(400)
+@app.errorhandler(401)
+@app.errorhandler(403)
+@app.errorhandler(404)
+@app.errorhandler(409)
+def _json_error(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": getattr(e, "description", str(e)),
+                        "status": getattr(e, "code", 500)}), getattr(e, "code", 500)
+    return e
+
+
+# --------------------------------------------------------------------------- #
+#  Bootstrap + migration
 # --------------------------------------------------------------------------- #
 def _migrate():
-    """Add columns introduced after the DB was first created (SQLite only)."""
+    """Create new tables and fold any legacy single-deck data into a demo deck."""
     from sqlalchemy import text, inspect
     insp = inspect(db.engine)
-    cols = {c["name"] for c in insp.get_columns("meta")}
-    if "theme" not in cols:
+
+    def cols(table):
         try:
-            db.session.execute(text("ALTER TABLE meta ADD COLUMN theme TEXT DEFAULT 'classic'"))
+            return {c["name"] for c in insp.get_columns(table)}
+        except Exception:
+            return set()
+
+    def add_col(table, ddl):
+        try:
+            db.session.execute(text(ddl))
             db.session.commit()
         except Exception:
-            # another worker/process may have added it first; ignore
             db.session.rollback()
+
+    scols = cols("slides")
+    if scols and "deck_id" not in scols:
+        add_col("slides", "ALTER TABLE slides ADD COLUMN deck_id INTEGER")
+    icols = cols("images")
+    if icols and "owner_id" not in icols:
+        add_col("images", "ALTER TABLE images ADD COLUMN owner_id INTEGER")
+
+    # Fold legacy slides (no deck) into a new ownerless public demo deck,
+    # carrying over the old singleton `meta` row if it exists.
+    orphan = db.session.execute(
+        text("SELECT COUNT(*) FROM slides WHERE deck_id IS NULL")).scalar() or 0
+    if orphan:
+        meta = {}
+        if "meta" in insp.get_table_names():
+            row = db.session.execute(text("SELECT * FROM meta WHERE id=1")).mappings().first()
+            if row:
+                meta = {k: row.get(k) for k in META_FIELDS if k in row}
+        deck = Deck(owner_id=None, is_public=True)
+        deck.update_meta(meta)
+        deck.title = deck.reportTitle or "नमुना प्रस्तुति"
+        db.session.add(deck)
+        db.session.flush()
+        db.session.execute(
+            text("UPDATE slides SET deck_id=:d WHERE deck_id IS NULL"), {"d": deck.id})
+        db.session.commit()
 
 
 with app.app_context():
     db.create_all()
     _migrate()
-    seed_if_empty()
+    seed_demo_if_empty()
 
 
 if __name__ == "__main__":
-    # Port: first CLI arg, else $PORT, else 5000. (On recent macOS, port 5000
-    # is taken by the AirPlay Receiver / Control Center, so the dev server
-    # defaults to another port via launch.json.)
     import sys
     port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 5000))
-    # use_reloader=False: the auto-reloader spawns a child process on every
-    # file change, which can leave orphaned servers bound to the port.
     app.run(host="127.0.0.1", port=port, debug=True, use_reloader=False)

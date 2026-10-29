@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>प्रस्तुतिहरू — Presentations</title>
+<style>
+:root{--navy:#1b1b52;--navy2:#2b2b74;--green:#1e5b45;--red:#b01e39;--ink:#16162e;
+  --muted:#5b5b74;--line:#dcdce8;--bg:#eef0f6;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Mukta","Noto Sans Devanagari",system-ui,Arial,sans-serif;
+  background:radial-gradient(1200px 600px at 50% -10%,#f7f8fc,#e7e9f2);color:var(--ink);min-height:100vh}
+a{color:inherit}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:12px 22px;
+  background:rgba(20,20,46,.95);backdrop-filter:blur(8px);color:#fff;box-shadow:0 2px 16px rgba(0,0,0,.25)}
+.topbar h1{font-size:18px;margin:0;font-weight:800;letter-spacing:.3px}
+.topbar .sp{flex:1}
+.btn{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;
+  padding:8px 14px;border-radius:9px;cursor:pointer;font:inherit;font-size:14px;font-weight:600;transition:.15s}
+.btn:hover{background:rgba(255,255,255,.18)}
+.btn.primary{background:#3ad29f;color:#04231a;border-color:#3ad29f}
+.btn.primary:hover{background:#2fbf8e}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn.ghost{background:transparent}
+.btn.danger{background:#b01e39;border-color:#b01e39}
+.user-chip{font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px}
+.wrap{max-width:1100px;margin:0 auto;padding:26px 22px 60px}
+.section-title{font-size:20px;font-weight:800;color:var(--navy);margin:28px 0 14px;display:flex;align-items:center;gap:10px}
+.section-title .count{font-size:13px;color:var(--muted);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  box-shadow:0 8px 24px rgba(20,20,60,.08);display:flex;flex-direction:column;transition:.15s}
+.card:hover{box-shadow:0 14px 34px rgba(20,20,60,.16);transform:translateY(-2px)}
+.card .thumb{height:120px;background:linear-gradient(135deg,var(--navy),var(--navy2));position:relative;
+  display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;padding:16px}
+.card .thumb .tt{font-weight:800;font-size:17px;line-height:1.25}
+.card .thumb .chev{position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent 0 40px,rgba(255,255,255,.05) 40px 46px)}
+.card .body{padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:8px}
+.card .meta{font-size:12.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+.badge.pub{background:#e4f7ee;color:#0f7a4f}
+.badge.priv{background:#fdeaef;color:#a4213c}
+.card .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+.card .acts .btn{background:#f1f2f8;color:var(--navy);border-color:var(--line)}
+.card .acts .btn:hover{background:#e6e8f3}
+.card .acts .btn.danger{background:#fdeaef;color:#a4213c;border-color:#f3c9d4}
+.empty{color:var(--muted);font-size:15px;padding:18px;background:var(--paper);border:1px dashed var(--line);border-radius:12px}
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(18,18,40,.55);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.show{display:flex}
+.modal{background:var(--paper);width:min(420px,100%);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.modal header{background:var(--navy);color:#fff;padding:14px 20px;font-weight:800;display:flex;align-items:center}
+.modal header .sp{flex:1}
+.modal header button{background:transparent;border:none;color:#fff;font-size:18px;cursor:pointer}
+.modal .mbody{padding:20px;display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:13px;font-weight:600;color:var(--muted)}
+.field input{border:1px solid var(--line);border-radius:9px;padding:10px 12px;font:inherit;font-size:15px}
+.tabs{display:flex;gap:8px;margin-bottom:4px}
+.tabs button{flex:1;padding:9px;border:1px solid var(--line);background:#f4f5fa;border-radius:9px;cursor:pointer;font:inherit;font-weight:700;color:var(--muted)}
+.tabs button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.err{color:var(--red);font-size:13px;min-height:16px}
+.share-menu{position:fixed;z-index:60;background:#fff;border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 16px 40px rgba(0,0,0,.22);padding:8px;display:none;min-width:200px}
+.share-menu.show{display:block}
+.share-menu button{display:flex;width:100%;align-items:center;gap:10px;background:transparent;border:none;
+  font:inherit;font-size:14px;padding:9px 10px;border-radius:8px;cursor:pointer;text-align:left;color:var(--ink)}
+.share-menu button:hover{background:#f1f2f8}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;
+  padding:11px 20px;border-radius:11px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:70}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>📊 प्रस्तुतिहरू</h1>
+  <div class="sp"></div>
+  <div id="authArea"></div>
+</div>
+
+<div class="wrap">
+  <div id="mine"></div>
+  <div class="section-title">🌐 सार्वजनिक प्रस्तुतिहरू <span class="count" id="pubCount"></span></div>
+  <div class="grid" id="publicGrid"></div>
+</div>
+
+<!-- auth modal -->
+<div class="overlay" id="authOverlay">
+  <div class="modal">
+    <header><span id="authTitle">लगइन</span><span class="sp"></span><button id="authClose">✕</button></header>
+    <div class="mbody">
+      <div class="tabs">
+        <button id="tabLogin" class="active">लगइन</button>
+        <button id="tabRegister">दर्ता</button>
+      </div>
+      <div class="field" id="fUser"><label>प्रयोगकर्ता नाम</label><input id="inUser" autocomplete="username"></div>
+      <div class="field" id="fEmail" style="display:none"><label>इमेल</label><input id="inEmail" type="email" autocomplete="email"></div>
+      <div class="field"><label>पासवर्ड</label><input id="inPass" type="password" autocomplete="current-password"></div>
+      <div class="err" id="authErr"></div>
+      <button class="btn primary" id="authSubmit">लगइन</button>
+    </div>
+  </div>
+</div>
+
+<div class="share-menu" id="shareMenu"></div>
+<div id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+let ME=null;
+let toastT; function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+async function api(method,url,body){
+  const r=await fetch(url,{method,headers:body!==undefined?{'Content-Type':'application/json'}:undefined,
+    body:body!==undefined?JSON.stringify(body):undefined});
+  if(!r.ok){ let e; try{e=(await r.json()).error;}catch(_){} throw new Error(e||('HTTP '+r.status)); }
+  return r.status===204?null:r.json();
+}
+function viewUrl(id){return '/view?id='+id;}
+function shareUrl(id){return location.origin+'/p/'+id;}
+
+async function boot(){
+  try{ ME=(await api('GET','/api/me')).user; }catch(_){ ME=null; }
+  renderAuthArea();
+  await Promise.all([loadMine(), loadPublic()]);
+}
+function renderAuthArea(){
+  const a=$('#authArea');
+  if(ME){
+    a.innerHTML=`<span class="user-chip">👤 ${esc(ME.username)}</span>
+      <button class="btn primary" id="btnNew">＋ नयाँ प्रस्तुति</button>
+      <button class="btn ghost" id="btnLogout">लगआउट</button>`;
+    $('#btnNew').onclick=newDeck;
+    $('#btnLogout').onclick=async()=>{ await api('POST','/api/auth/logout'); ME=null; renderAuthArea(); loadMine(); loadPublic(); toast('लगआउट भयो'); };
+  }else{
+    a.innerHTML=`<button class="btn" id="btnLogin">लगइन</button>
+      <button class="btn primary" id="btnRegister">दर्ता गर्नुहोस्</button>`;
+    $('#btnLogin').onclick=()=>openAuth('login');
+    $('#btnRegister').onclick=()=>openAuth('register');
+  }
+}
+function deckCard(d,mine){
+  const badge=d.is_public?'<span class="badge pub">सार्वजनिक</span>':'<span class="badge priv">निजी</span>';
+  const owner=d.owner?('👤 '+esc(d.owner)):'नमुना';
+  let acts=`<a class="btn sm" href="${viewUrl(d.id)}">${mine?'✎ सम्पादन':'👁 हेर्नुहोस्'}</a>`;
+  if(d.is_public||mine) acts+=`<button class="btn sm" data-share="${d.id}">🔗 सेयर</button>`;
+  if(mine){
+    acts+=`<button class="btn sm" data-toggle="${d.id}" data-pub="${d.is_public?1:0}">${d.is_public?'निजी बनाउनुहोस्':'सार्वजनिक गर्नुहोस्'}</button>`;
+    acts+=`<button class="btn sm danger" data-del="${d.id}">🗑</button>`;
+  }
+  return `<div class="card">
+    <a class="thumb" href="${viewUrl(d.id)}"><div class="chev"></div><div class="tt">${esc(d.title)}</div></a>
+    <div class="body">
+      <div class="meta">${badge}<span>${owner}</span><span>· ${d.slides} स्लाइड</span></div>
+      <div class="acts">${acts}</div>
+    </div></div>`;
+}
+async function loadPublic(){
+  const decks=await api('GET','/api/public/decks');
+  $('#pubCount').textContent='('+decks.length+')';
+  $('#publicGrid').innerHTML = decks.length
+    ? decks.map(d=>deckCard(d,ME&&d.owner_id===ME.id)).join('')
+    : '<div class="empty">कुनै सार्वजनिक प्रस्तुति छैन।</div>';
+  wireCards($('#publicGrid'));
+}
+async function loadMine(){
+  const box=$('#mine');
+  if(!ME){ box.innerHTML=''; return; }
+  const decks=await api('GET','/api/decks');
+  box.innerHTML=`<div class="section-title">📁 मेरा प्रस्तुतिहरू <span class="count">(${decks.length})</span></div>`+
+    `<div class="grid">${decks.length?decks.map(d=>deckCard(d,true)).join(''):'<div class="empty">तपाईंका कुनै प्रस्तुति छैनन् — “नयाँ प्रस्तुति” थिच्नुहोस्।</div>'}</div>`;
+  wireCards(box);
+}
+function wireCards(root){
+  root.querySelectorAll('[data-share]').forEach(b=>b.onclick=e=>openShare(e,+b.dataset.share));
+  root.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=async()=>{
+    await api('PUT','/api/decks/'+b.dataset.toggle,{is_public:b.dataset.pub!=='1'});
+    toast('दृश्यता परिवर्तन भयो'); loadMine(); loadPublic();
+  });
+  root.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('यो प्रस्तुति हटाउने?')) return;
+    await api('DELETE','/api/decks/'+b.dataset.del); toast('हटाइयो'); loadMine(); loadPublic();
+  });
+}
+async function newDeck(){
+  const title=prompt('नयाँ प्रस्तुतिको नाम:','नयाँ प्रस्तुति'); if(title===null) return;
+  const d=await api('POST','/api/decks',{title:title||'नयाँ प्रस्तुति'});
+  location.href=viewUrl(d.id);
+}
+
+/* ---- auth modal ---- */
+let authMode='login';
+function openAuth(mode){ authMode=mode; setAuthMode(); $('#authErr').textContent=''; $('#authOverlay').classList.add('show'); $('#inUser').focus(); }
+function setAuthMode(){
+  const reg=authMode==='register';
+  $('#tabLogin').classList.toggle('active',!reg); $('#tabRegister').classList.toggle('active',reg);
+  $('#authTitle').textContent=reg?'दर्ता':'लगइन';
+  $('#fEmail').style.display=reg?'flex':'none';
+  $('#authSubmit').textContent=reg?'दर्ता गर्नुहोस्':'लगइन';
+}
+$('#tabLogin').onclick=()=>{authMode='login';setAuthMode();};
+$('#tabRegister').onclick=()=>{authMode='register';setAuthMode();};
+$('#authClose').onclick=()=>$('#authOverlay').classList.remove('show');
+$('#authOverlay').onclick=e=>{ if(e.target===$('#authOverlay')) $('#authOverlay').classList.remove('show'); };
+$('#authSubmit').onclick=async()=>{
+  const err=$('#authErr'); err.textContent='';
+  const username=$('#inUser').value.trim(), password=$('#inPass').value, email=$('#inEmail').value.trim();
+  try{
+    if(authMode==='register') ME=await api('POST','/api/auth/register',{username,email,password});
+    else ME=await api('POST','/api/auth/login',{username,password});
+    $('#authOverlay').classList.remove('show');
+    $('#inPass').value='';
+    renderAuthArea(); loadMine(); loadPublic(); toast('स्वागत छ, '+ME.username+'!');
+  }catch(e){ err.textContent=e.message; }
+};
+
+/* ---- share ---- */
+function openShare(e, id){
+  e.preventDefault(); e.stopPropagation();
+  const url=shareUrl(id), enc=encodeURIComponent(url);
+  const m=$('#shareMenu');
+  m.innerHTML=`
+    <button data-act="copy">🔗 लिंक कपी गर्नुहोस्</button>
+    <button data-act="wa">🟢 WhatsApp</button>
+    <button data-act="fb">🔵 Facebook</button>
+    <button data-act="tw">⬛ X / Twitter</button>
+    <button data-act="in">🔷 LinkedIn</button>
+    <button data-act="mail">✉️ इमेल</button>`;
+  m.querySelector('[data-act="copy"]').onclick=async()=>{ try{await navigator.clipboard.writeText(url); toast('लिंक कपी भयो');}catch(_){ prompt('लिंक:',url);} closeShare(); };
+  const open=u=>{ window.open(u,'_blank','noopener'); closeShare(); };
+  m.querySelector('[data-act="wa"]').onclick=()=>open('https://wa.me/?text='+enc);
+  m.querySelector('[data-act="fb"]').onclick=()=>open('https://www.facebook.com/sharer/sharer.php?u='+enc);
+  m.querySelector('[data-act="tw"]').onclick=()=>open('https://twitter.com/intent/tweet?url='+enc);
+  m.querySelector('[data-act="in"]').onclick=()=>open('https://www.linkedin.com/sharing/share-offsite/?url='+enc);
+  m.querySelector('[data-act="mail"]').onclick=()=>open('mailto:?subject='+encodeURIComponent('प्रस्तुति')+'&body='+enc);
+  const r=e.target.getBoundingClientRect();
+  m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(10,Math.min(r.left,innerWidth-220))+'px';
+  m.classList.add('show');
+}
+function closeShare(){ $('#shareMenu').classList.remove('show'); }
+document.addEventListener('click',e=>{ if(!e.target.closest('#shareMenu') && !e.target.closest('[data-share]')) closeShare(); });
+
+boot();
+</script>
+</body>
+</html>

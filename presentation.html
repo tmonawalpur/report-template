@@ -74,6 +74,13 @@ button{font-family:inherit}
   background:transparent; border:none; color:#fff; font:inherit; font-size:13px; font-weight:600;
   padding:8px 10px; border-radius:7px}
 .tb-menu button:hover{background:rgba(255,255,255,.14)}
+/* share menu */
+.share-menu{position:fixed; z-index:70; background:#fff; border:1px solid #dcdce8; border-radius:12px;
+  box-shadow:0 16px 40px rgba(0,0,0,.25); padding:8px; display:none; min-width:210px}
+.share-menu.show{display:block}
+.share-menu button{display:flex; width:100%; align-items:center; gap:10px; background:transparent; border:none;
+  font:inherit; font-size:14px; padding:9px 10px; border-radius:8px; cursor:pointer; text-align:left; color:#16162e}
+.share-menu button:hover{background:#f1f2f8}
 
 /* ---------- Stage ---------- */
 #stageWrap{
@@ -502,7 +509,8 @@ html.exported #fsFloat{display:inline-flex}
 <body>
 
 <div id="toolbar">
-  <div class="brand">📊 समिक्षा प्रतिवेदन <small>· आ.व. ०८२/०८३</small></div>
+  <a class="tb-btn" id="btnGallery" href="/" title="ग्यालरीमा फर्कनुहोस्" style="text-decoration:none">← ग्यालरी</a>
+  <div class="brand" id="deckTitle">📊 प्रस्तुति</div>
   <span class="brand-mode" id="modePill" title="डाटा भण्डारण अवस्था">…</span>
   <div class="tb-sep"></div>
   <div class="tb-group">
@@ -511,7 +519,9 @@ html.exported #fsFloat{display:inline-flex}
     <button class="tb-btn" id="btnJson" title="यस स्लाइडको JSON">{ } JSON</button>
     <button class="tb-btn" id="btnOverview">▦ सबै स्लाइड</button>
     <button class="tb-btn" id="btnFull">⛶ फुलस्क्रिन</button>
+    <button class="tb-btn" id="btnShare" title="सेयर गर्नुहोस्">🔗 सेयर</button>
     <a class="tb-btn" id="btnAdmin" href="/admin" title="एडमिन प्यानल खोल्नुहोस्" style="display:none;text-decoration:none">🗄 एडमिन</a>
+    <a class="tb-btn" id="btnLoginHint" href="/" title="सम्पादन गर्न लगइन चाहिन्छ" style="display:none;text-decoration:none">🔑 सम्पादन गर्न लगइन</a>
   </div>
   <div class="tb-sep"></div>
   <div class="tb-group" id="editTools" style="display:none">
@@ -543,7 +553,7 @@ html.exported #fsFloat{display:inline-flex}
       </div>
     </div>
     <button class="tb-btn" id="btnImport">⬆ आयात</button>
-    <button class="tb-btn" id="btnReset">↺ रिसेट</button>
+    <button class="tb-btn" id="btnReset" title="सेभ नगरिएका परिवर्तन हटाउनुहोस्">↺ पूर्ववत</button>
   </div>
   <input type="file" id="fileInput" accept="application/json" style="display:none">
   <input type="file" id="imgInput" accept="image/*" style="display:none">
@@ -571,6 +581,7 @@ html.exported #fsFloat{display:inline-flex}
   <div class="jp-hint" id="jpHint"></div>
 </div>
 
+<div class="share-menu" id="shareMenu"></div>
 <div id="toast"></div>
 
 <script>
@@ -899,9 +910,14 @@ const ORIGINAL_DECK = {
    ============================================================ */
 const PALETTE = ['#2f6bff','#ec4899','#38bdf8','#a855f7','#f59e0b','#10b981','#ef4444'];
 const LS_KEY = 'annualReviewDeck_v1';
+// Which deck to load: /p/<id> or ?id=<id>. None → standalone exported file.
+const DECK_ID = (()=>{ const m=location.pathname.match(/^\/p\/(\d+)/); if(m) return +m[1];
+  const q=new URLSearchParams(location.search).get('id'); return q?+q:null; })();
+const API_BASE = DECK_ID!=null ? '/api/decks/'+DECK_ID : null;
 let DECK = {meta:{},slides:[]};
 let cur = 0;
 let editing = false;
+let CAN_EDIT = false;   // may this viewer edit (owner) — set after load
 const chartInstances = {};
 
 /* ---------- Persistence layer ----------
@@ -922,23 +938,42 @@ async function api(method, url, body){
 }
 
 async function bootstrap(){
-  try{
-    DECK = await api('GET','/api/deck');
-    if(!DECK || !Array.isArray(DECK.slides)) throw new Error('bad deck');
-    SERVER = true;
-  }catch(e){
-    SERVER = false;
-    DECK = load();
+  if(API_BASE){
+    try{
+      const d = await api('GET', API_BASE);
+      if(!d || !Array.isArray(d.slides)) throw new Error('bad deck');
+      DECK = {meta:d.meta||{}, slides:d.slides};
+      CAN_EDIT = !!d.can_edit; SERVER = true;
+      document.getElementById('deckTitle').textContent = d.title || 'प्रस्तुति';
+      document.title = (d.title||'प्रस्तुति');
+    }catch(e){
+      document.body.innerHTML = '<div style="padding:70px;text-align:center;font:18px/1.6 system-ui;color:#334">'
+        +'यो प्रस्तुति फेला परेन, वा हेर्ने अनुमति छैन।<br><br>'
+        +'<a href="/" style="color:#1b1b52;font-weight:700">← ग्यालरीमा फर्कनुहोस्</a></div>';
+      return;
+    }
+  }else{
+    // standalone exported file (no backend): edit locally, persist to localStorage
+    SERVER = false; CAN_EDIT = true; DECK = load();
+    document.getElementById('deckTitle').textContent = (DECK.meta&&DECK.meta.reportTitle)||'प्रस्तुति';
   }
   initThemeSelect();
   render(); show(0);
-  document.getElementById('modePill').textContent = SERVER ? '● सर्भर' : '○ अफलाइन';
+  applyEditPermissions();
+  document.getElementById('modePill').textContent = SERVER ? (CAN_EDIT?'● सम्पादनयोग्य':'● हेर्ने मात्र') : '○ अफलाइन';
   document.getElementById('modePill').className = 'brand-mode'+(SERVER?' on':'');
-  document.getElementById('btnSaveDb').title = SERVER
-    ? 'डाटाबेसमा सेभ गर्नुहोस् (Ctrl+S)'
-    : 'यसै ब्राउजरमा सेभ गर्नुहोस् — सर्भर चलेको छैन (Ctrl+S)';
-  document.getElementById('btnAdmin').style.display = SERVER ? 'inline-flex' : 'none';
   setSaveUI('saved');
+}
+// Show/hide editing affordances based on ownership.
+function applyEditPermissions(){
+  ['btnSaveDb','btnEdit','btnJson','btnImport','btnReset'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display = CAN_EDIT ? '' : 'none';
+  });
+  const adm=document.getElementById('btnAdmin');
+  if(adm){ adm.href='/admin?id='+DECK_ID; adm.style.display = (CAN_EDIT && SERVER) ? 'inline-flex' : 'none'; }
+  const hint=document.getElementById('btnLoginHint');
+  if(hint) hint.style.display = (!CAN_EDIT && SERVER) ? 'inline-flex' : 'none';
+  if(!CAN_EDIT){ editing=false; document.body.classList.remove('editing'); }
 }
 
 function load(){
@@ -948,7 +983,7 @@ function load(){
 function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(DECK)); }catch(e){} }
 
 // Reload the whole deck from the server after a structural change (keeps ids/order in sync).
-async function reloadDeck(){ DECK = await api('GET','/api/deck'); render(); }
+async function reloadDeck(){ const d = await api('GET', API_BASE); DECK = {meta:d.meta||{}, slides:d.slides||[]}; CAN_EDIT = !!d.can_edit; render(); }
 
 // Mark which entity a path-based text edit touched, so we only PUT what changed.
 function markDirty(path){
@@ -1358,7 +1393,7 @@ async function removeLinkedCompanions(linkId){
   if(!linkId) return;
   const comps=DECK.slides.filter(s=>s.type==='chart' && s.linkedTo===linkId);
   for(const comp of comps){
-    if(SERVER && comp._id!=null){ await api('DELETE','/api/slides/'+comp._id); }
+    if(SERVER && comp._id!=null){ await api('DELETE',API_BASE+'/slides/'+comp._id); }
     else { const k=DECK.slides.indexOf(comp); if(k>=0) DECK.slides.splice(k,1); }
   }
   if(SERVER && comps.length) await reloadDeck();
@@ -1388,7 +1423,7 @@ async function setGraphMode(i,mode){
     const exists=DECK.slides.some(s=>s.type==='chart' && s.linkedTo===sl.linkId);
     if(!exists){
       const comp={type:'chart', linkedTo:sl.linkId, title:(sl.title||'तालिका')+' — ग्राफ', chart:pickChartCfg(sl.chart)};
-      if(SERVER){ await flushSave(); const r=await api('POST','/api/slides',{after:sl._id, slide:comp}); await reloadDeck(); }
+      if(SERVER){ await flushSave(); const r=await api('POST',API_BASE+'/slides',{after:sl._id, slide:comp}); await reloadDeck(); }
       else { DECK.slides.splice(i+1,0,comp); }
     }
     markDirty('slides.'+i); render(); show(cur); scheduleSave();
@@ -1554,6 +1589,7 @@ function applyEditing(){
   document.body.classList.toggle('editing', editing);
 }
 function toggleEdit(){
+  if(!CAN_EDIT) return;
   editing=!editing;
   document.getElementById('btnEdit').classList.toggle('active',editing);
   document.getElementById('editTools').style.display=editing?'flex':'none';
@@ -1670,7 +1706,7 @@ function getByPath(o,p){ return p.split('.').reduce((a,k)=> a==null?a:a[k], o); 
 function setByPath(o,p,v){ const ks=p.split('.'); let x=o; for(let i=0;i<ks.length-1;i++) x=x[ks[i]]; x[ks[ks.length-1]]=v; }
 
 let saveT=null;
-function scheduleSave(){ clearTimeout(saveT); saveT=setTimeout(flushSave,450); setSaveUI('unsaved'); }
+function scheduleSave(){ if(!CAN_EDIT) return; clearTimeout(saveT); saveT=setTimeout(flushSave,450); setSaveUI('unsaved'); }
 
 // Reflect save status on the toolbar button: 'saved' | 'unsaved' | 'saving'.
 function setSaveUI(state){
@@ -1687,14 +1723,15 @@ function setSaveUI(state){
 // chart edit is never clobbered by the deck being re-fetched from the server.
 async function flushSave(){
   clearTimeout(saveT); saveT=null;
+  if(!CAN_EDIT){ return; }
   if(!SERVER){ save(); setSaveUI('saved'); return; }
   if(!dirty.meta && dirty.slides.size===0){ setSaveUI('saved'); return; }
   const jobs=[];
-  if(dirty.meta){ dirty.meta=false; jobs.push(api('PUT','/api/meta',DECK.meta)); }
+  if(dirty.meta){ dirty.meta=false; jobs.push(api('PUT',API_BASE+'/meta',DECK.meta)); }
   const idx=[...dirty.slides]; dirty.slides.clear();
   for(const i of idx){
     const sl=DECK.slides[i];
-    if(sl && sl._id!=null) jobs.push(api('PUT','/api/slides/'+sl._id, slidePayload(sl)));
+    if(sl && sl._id!=null) jobs.push(api('PUT',API_BASE+'/slides/'+sl._id, slidePayload(sl)));
   }
   try{ await Promise.all(jobs); setSaveUI('saved'); }
   catch(e){ toast('⚠ सर्भरमा सेभ हुन सकेन'); setSaveUI('unsaved'); }
@@ -1703,6 +1740,7 @@ async function flushSave(){
 // Explicit "Save to database" action: force-commits the whole current deck
 // (all slides + meta), independent of the debounced autosave.
 async function saveAllToDB(){
+  if(!CAN_EDIT) return;
   const b=document.getElementById('btnSaveDb');
   if(b && b.classList.contains('saving')) return;      // avoid double clicks
   if(!SERVER){ save(); setSaveUI('saved'); toast('✔ सेभ भयो (अफलाइन — यसै ब्राउजरमा)'); return; }
@@ -1712,7 +1750,7 @@ async function saveAllToDB(){
     // one atomic request saves the whole deck (meta + all slides, in order).
     // Send slides WITH their _id so the server upserts by id (preserves ids)
     // instead of deleting + recreating everything.
-    const fresh = await api('PUT','/api/deck', {meta:DECK.meta, slides:DECK.slides});
+    const fresh = await api('PUT',API_BASE+'/save', {meta:DECK.meta, slides:DECK.slides});
     // sync ids back (same order) without a disruptive re-render/animation replay
     fresh.slides.forEach((s,i)=>{ if(DECK.slides[i]) DECK.slides[i]._id = s._id; });
     dirty.meta=false; dirty.slides.clear();
@@ -1724,18 +1762,19 @@ document.getElementById('btnSaveDb').onclick=saveAllToDB;
 // Last-ditch save when the page is hidden/closed/reloaded within the debounce
 // window; keepalive lets these requests outlive the page.
 function flushOnExit(){
+  if(!CAN_EDIT) return;
   if(!SERVER){ save(); return; }
   const send=(url,body)=>fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},
     body:JSON.stringify(body), keepalive:true}).catch(()=>{});
-  if(dirty.meta) send('/api/meta',DECK.meta);
-  for(const i of dirty.slides){ const sl=DECK.slides[i]; if(sl && sl._id!=null) send('/api/slides/'+sl._id, slidePayload(sl)); }
+  if(dirty.meta) send(API_BASE+'/meta',DECK.meta);
+  for(const i of dirty.slides){ const sl=DECK.slides[i]; if(sl && sl._id!=null) send(API_BASE+'/slides/'+sl._id, slidePayload(sl)); }
 }
 window.addEventListener('pagehide', flushOnExit);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushOnExit(); });
 
 /* slide ops (server-aware; falls back to localStorage when offline) */
 async function persistOrder(){
-  if(SERVER) await api('POST','/api/slides/reorder',{order:DECK.slides.map(s=>s._id)});
+  if(SERVER) await api('POST',API_BASE+'/slides/reorder',{order:DECK.slides.map(s=>s._id)});
   else save();
 }
 const NEW_SLIDE = {
@@ -1751,7 +1790,7 @@ document.getElementById('btnAdd').onclick=async ()=>{
   await flushSave();
   const type=document.getElementById('addType').value;
   const s=(NEW_SLIDE[type]||NEW_SLIDE.list)();
-  if(SERVER){ await api('POST','/api/slides',{after:DECK.slides[cur]?._id ?? null, slide:s}); await reloadDeck(); show(Math.min(cur+1,DECK.slides.length-1)); }
+  if(SERVER){ await api('POST',API_BASE+'/slides',{after:DECK.slides[cur]?._id ?? null, slide:s}); await reloadDeck(); show(Math.min(cur+1,DECK.slides.length-1)); }
   else { DECK.slides.splice(cur+1,0,s); save(); render(); show(cur+1); }
   toast('स्लाइड थपियो');
 };
@@ -1777,7 +1816,7 @@ document.getElementById('imgInput').onchange=async e=>{
 };
 document.getElementById('btnDup').onclick=async ()=>{
   await flushSave();
-  if(SERVER){ const id=DECK.slides[cur]?._id; if(id==null) return; await api('POST','/api/slides/'+id+'/duplicate'); await reloadDeck(); show(cur+1); }
+  if(SERVER){ const id=DECK.slides[cur]?._id; if(id==null) return; await api('POST',API_BASE+'/slides/'+id+'/duplicate'); await reloadDeck(); show(cur+1); }
   else { DECK.slides.splice(cur+1,0,structuredClone(DECK.slides[cur])); save(); render(); show(cur+1); }
   toast('स्लाइड कपी भयो');
 };
@@ -1785,7 +1824,7 @@ document.getElementById('btnDel').onclick=async ()=>{
   if(DECK.slides.length<=1) return;
   if(!confirm('यो स्लाइड हटाउने?')) return;
   await flushSave();
-  if(SERVER){ const id=DECK.slides[cur]?._id; await api('DELETE','/api/slides/'+id); await reloadDeck(); if(cur>=DECK.slides.length) cur=DECK.slides.length-1; show(cur); }
+  if(SERVER){ const id=DECK.slides[cur]?._id; await api('DELETE',API_BASE+'/slides/'+id); await reloadDeck(); if(cur>=DECK.slides.length) cur=DECK.slides.length-1; show(cur); }
   else { DECK.slides.splice(cur,1); if(cur>=DECK.slides.length) cur=DECK.slides.length-1; save(); render(); show(cur); }
   toast('स्लाइड हटाइयो');
 };
@@ -1827,7 +1866,7 @@ document.getElementById('fileInput').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; const r=new FileReader();
   r.onload=async ()=>{ try{
     const data=JSON.parse(r.result);
-    if(SERVER){ await api('POST','/api/import',data); await reloadDeck(); }
+    if(SERVER){ await api('POST',API_BASE+'/import',data); await reloadDeck(); }
     else { DECK=data; save(); render(); }
     cur=0; show(0); toast('आयात सफल');
   }catch(err){ alert('अमान्य JSON फाइल'); } };
@@ -1861,11 +1900,38 @@ exportMenu.addEventListener('click', e=>{
 });
 document.addEventListener('click', e=>{ if(!e.target.closest('#exportDrop')) exportMenu.classList.remove('show'); });
 document.getElementById('btnReset').onclick=async ()=>{
-  if(!confirm('मूल सामग्रीमा फर्काउने? सबै परिवर्तन हट्नेछन्।')) return;
-  if(SERVER){ await api('POST','/api/reset'); await reloadDeck(); }
+  if(!confirm('सेभ नगरिएका परिवर्तनहरू हटाएर अन्तिम सेभ गरिएको अवस्थामा फर्कने?')) return;
+  if(SERVER){ await reloadDeck(); }
   else { DECK=structuredClone(ORIGINAL_DECK); save(); render(); }
-  cur=0; show(0); toast('रिसेट भयो');
+  cur=0; show(0); toast('पूर्ववत भयो');
 };
+/* ---------- Share (link + social media) ---------- */
+function shareLink(){ return DECK_ID!=null ? (location.origin+'/p/'+DECK_ID) : location.href; }
+document.getElementById('btnShare').onclick=e=>{
+  e.stopPropagation();
+  const url=shareLink(), enc=encodeURIComponent(url), m=document.getElementById('shareMenu');
+  if(m.classList.contains('show')){ m.classList.remove('show'); return; }
+  m.innerHTML=`
+    <button data-act="copy">🔗 लिंक कपी गर्नुहोस्</button>
+    <button data-act="wa">🟢 WhatsApp</button>
+    <button data-act="fb">🔵 Facebook</button>
+    <button data-act="tw">⬛ X / Twitter</button>
+    <button data-act="in">🔷 LinkedIn</button>
+    <button data-act="mail">✉️ इमेल</button>`;
+  const close=()=>m.classList.remove('show');
+  const open=u=>{ window.open(u,'_blank','noopener'); close(); };
+  m.querySelector('[data-act="copy"]').onclick=async()=>{ try{await navigator.clipboard.writeText(url); toast('लिंक कपी भयो');}catch(_){ prompt('लिंक:',url);} close(); };
+  m.querySelector('[data-act="wa"]').onclick=()=>open('https://wa.me/?text='+enc);
+  m.querySelector('[data-act="fb"]').onclick=()=>open('https://www.facebook.com/sharer/sharer.php?u='+enc);
+  m.querySelector('[data-act="tw"]').onclick=()=>open('https://twitter.com/intent/tweet?url='+enc);
+  m.querySelector('[data-act="in"]').onclick=()=>open('https://www.linkedin.com/sharing/share-offsite/?url='+enc);
+  m.querySelector('[data-act="mail"]').onclick=()=>open('mailto:?body='+enc);
+  const r=e.currentTarget.getBoundingClientRect();
+  m.style.top=(r.bottom+6)+'px'; m.style.left=Math.max(10,Math.min(r.left,innerWidth-230))+'px';
+  m.classList.add('show');
+};
+document.addEventListener('click',e=>{ if(!e.target.closest('#shareMenu') && !e.target.closest('#btnShare')) document.getElementById('shareMenu').classList.remove('show'); });
+
 /* ---------- Presentation templates (themes) ---------- */
 const THEMES=[['classic','उत्कृष्ट'],['ocean','महासागर'],['emerald','पन्ना'],['royal','राजसी'],['slate','स्लेट']];
 function initThemeSelect(){
@@ -1881,7 +1947,8 @@ function applyTheme(name,persist){
   document.documentElement.setAttribute('data-theme',name);
   try{ localStorage.setItem('deckTheme',name); }catch(_){}
   if(persist){
-    DECK.meta=DECK.meta||{}; DECK.meta.theme=name; dirty.meta=true; scheduleSave();
+    DECK.meta=DECK.meta||{}; DECK.meta.theme=name;
+    if(CAN_EDIT){ dirty.meta=true; scheduleSave(); }   // viewers change theme locally only
     DECK.slides.forEach((sl,i)=>{ if(sl.chart && chartInstances[i]){ try{chartInstances[i].destroy()}catch(_){} delete chartInstances[i]; } });
     ensureChart(cur);
     const lbl=(THEMES.find(t=>t[0]===name)||[])[1]||name;

@@ -144,8 +144,10 @@ textarea.jsonedit{width:100%; box-sizing:border-box; font:12px/1.5 ui-monospace,
   <h1>🗄 एडमिन प्यानल <small>· समीक्षा प्रतिवेदन डाटा</small></h1>
   <span class="pill" id="modePill">…</span>
   <div class="sp"></div>
-  <a class="btn" href="/" title="प्रस्तुति खोल्नुहोस्">▶ प्रस्तुति</a>
+  <a class="btn" href="/" title="ग्यालरी">← ग्यालरी</a>
+  <a class="btn" id="btnOpenDeck" href="#" title="प्रस्तुति खोल्नुहोस्">▶ प्रस्तुति</a>
 </div>
+<script>{const id=new URLSearchParams(location.search).get('id'); const a=document.getElementById('btnOpenDeck'); if(a) a.href=id?('/view?id='+id):'/';}</script>
 
 <div class="wrap" id="app">
   <div class="loading">लोड हुँदैछ…</div>
@@ -198,6 +200,9 @@ const SKELETONS = {
 
 let DECK = {meta:{}, slides:[]};
 let SERVER = true;
+const DECK_ID = (()=>{ const q=new URLSearchParams(location.search).get('id'); return q?+q:null; })();
+const API_BASE = DECK_ID!=null ? '/api/decks/'+DECK_ID : null;
+let CAN_EDIT = false;
 let workIndex = -1;   // slide index being edited
 let work = null;      // working copy of that slide
 
@@ -216,23 +221,35 @@ let toastT; function toast(msg,err){ const t=$('#toast'); t.textContent=msg; t.c
   clearTimeout(toastT); toastT=setTimeout(()=>t.className='',2400); }
 
 async function boot(){
-  try{ DECK = await api('GET','/api/deck'); SERVER=true; }
-  catch(e){ SERVER=false; }
   const p=$('#modePill');
-  if(SERVER){ p.textContent='● डाटाबेस जडित'; p.className='pill on'; }
-  else{ p.textContent='○ सर्भर जडान भएन'; p.className='pill off'; }
+  if(API_BASE==null){
+    SERVER=false; p.textContent='○ कुनै प्रस्तुति छानिएको छैन'; p.className='pill off';
+    $('#app').innerHTML = `<div class="card"><div class="body"><p><b>कुनै प्रस्तुति छानिएको छैन।</b></p>
+      <p class="hint"><a href="/">ग्यालरी</a> बाट प्रस्तुति छानेर “सम्पादन” मार्फत एडमिन खोल्नुहोस्।</p></div></div>`;
+    return;
+  }
+  try{
+    const d = await api('GET', API_BASE); SERVER=true;
+    DECK = {meta:d.meta||{}, slides:d.slides||[]}; CAN_EDIT = !!d.can_edit;
+    document.title = 'एडमिन · '+(d.title||'प्रस्तुति');
+  }catch(e){
+    SERVER=false; p.textContent='○ पहुँच छैन'; p.className='pill off';
+    $('#app').innerHTML = `<div class="card"><div class="body"><p><b>यो प्रस्तुति फेला परेन वा पहुँच छैन।</b></p>
+      <p class="hint"><a href="/">← ग्यालरी</a></p></div></div>`;
+    return;
+  }
+  if(!CAN_EDIT){
+    p.textContent='○ सम्पादन अनुमति छैन'; p.className='pill off';
+    $('#app').innerHTML = `<div class="card"><div class="body"><p><b>यो प्रस्तुति सम्पादन गर्ने अनुमति तपाईंसँग छैन।</b></p>
+      <p class="hint">सम्पादन गर्न यसको मालिकको रूपमा लगइन गर्नुहोस्। <a href="/view?id=${DECK_ID}">हेर्नुहोस्</a> · <a href="/">ग्यालरी</a></p></div></div>`;
+    return;
+  }
+  p.textContent='● डाटाबेस जडित'; p.className='pill on';
   renderApp();
 }
 
 /* ---------------- top-level render ---------------- */
 function renderApp(){
-  if(!SERVER){
-    $('#app').innerHTML = `<div class="card"><div class="body">
-      <p><b>सर्भरसँग जडान हुन सकेन।</b></p>
-      <p class="hint">एडमिन प्यानल चलाउन Flask सर्भर चालु हुनुपर्छ: <code>python app.py</code> चलाएर
-      <code>http://127.0.0.1:5000/admin</code> खोल्नुहोस्।</p></div></div>`;
-    return;
-  }
   $('#app').innerHTML = metaCardHTML() + slidesCardHTML();
   wireMeta();
   wireSlides();
@@ -257,7 +274,7 @@ function metaCardHTML(){
 function wireMeta(){
   $('#saveMeta').onclick = async ()=>{
     $('#app').querySelectorAll('[data-meta]').forEach(i=> DECK.meta[i.dataset.meta]=i.value);
-    try{ await api('PUT','/api/meta',DECK.meta); toast('✔ विवरण सेभ भयो'); }
+    try{ await api('PUT',API_BASE+'/meta',DECK.meta); toast('✔ विवरण सेभ भयो'); }
     catch(e){ toast('⚠ सेभ हुन सकेन',1); }
   };
 }
@@ -313,7 +330,7 @@ function wireSlides(){
     const type = $('#newType').value;
     const slide = SKELETONS[type]();
     const afterId = DECK.slides.length ? DECK.slides[DECK.slides.length-1]._id : null;
-    try{ await api('POST','/api/slides',{after:afterId, slide}); await reload(); toast('✔ स्लाइड थपियो'); }
+    try{ await api('POST',API_BASE+'/slides',{after:afterId, slide}); await reload(); toast('✔ स्लाइड थपियो'); }
     catch(e){ toast('⚠ थप्न सकिएन',1); }
   };
   $('#slideRows').addEventListener('click', async e=>{
@@ -323,18 +340,18 @@ function wireSlides(){
     if(act==='del'){
       if(DECK.slides.length<=1) return toast('कम्तिमा एक स्लाइड चाहिन्छ',1);
       if(!confirm('यो स्लाइड हटाउने?')) return;
-      try{ await api('DELETE','/api/slides/'+s._id); await reload(); toast('स्लाइड हटाइयो'); }catch(e){ toast('⚠ हट्न सकेन',1); }
+      try{ await api('DELETE',API_BASE+'/slides/'+s._id); await reload(); toast('स्लाइड हटाइयो'); }catch(e){ toast('⚠ हट्न सकेन',1); }
     } else if(act==='dup'){
-      try{ await api('POST','/api/slides/'+s._id+'/duplicate'); await reload(); toast('✔ कपी भयो'); }catch(e){ toast('⚠ कपी हुन सकेन',1); }
+      try{ await api('POST',API_BASE+'/slides/'+s._id+'/duplicate'); await reload(); toast('✔ कपी भयो'); }catch(e){ toast('⚠ कपी हुन सकेन',1); }
     } else if(act==='up' || act==='down'){
       const j = act==='up'? i-1 : i+1; if(j<0||j>=DECK.slides.length) return;
       [DECK.slides[i],DECK.slides[j]]=[DECK.slides[j],DECK.slides[i]];
-      try{ await api('POST','/api/slides/reorder',{order:DECK.slides.map(x=>x._id)}); await reload(); }
+      try{ await api('POST',API_BASE+'/slides/reorder',{order:DECK.slides.map(x=>x._id)}); await reload(); }
       catch(e){ toast('⚠ क्रम मिलेन',1); }
     }
   });
 }
-async function reload(){ DECK = await api('GET','/api/deck'); renderApp(); }
+async function reload(){ const _d = await api('GET',API_BASE); DECK={meta:_d.meta||{},slides:_d.slides||[]}; renderApp(); }
 
 /* ---------------- SLIDE EDITOR (modal) ---------------- */
 let jsonEdit=false;   // whether the JSON panel is in edit mode
@@ -606,8 +623,8 @@ $('#mBody').addEventListener('click', e=>{
 
 $('#mSave').onclick = async ()=>{
   try{
-    await api('PUT','/api/slides/'+work._id, stripId(work));
-    DECK.slides[workIndex]=await api('GET','/api/deck').then(d=>d.slides[workIndex]);
+    await api('PUT',API_BASE+'/slides/'+work._id, stripId(work));
+    DECK.slides[workIndex]=await api('GET',API_BASE).then(d=>d.slides[workIndex]);
     closeEditor(); renderApp(); toast('✔ स्लाइड सेभ भयो');
   }catch(e){ toast('⚠ सेभ हुन सकेन',1); }
 };
