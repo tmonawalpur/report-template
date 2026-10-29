@@ -143,6 +143,7 @@ function deckCard(d,mine){
   const badge=d.is_public?'<span class="badge pub">सार्वजनिक</span>':'<span class="badge priv">निजी</span>';
   const owner=d.owner?('👤 '+esc(d.owner)):'नमुना';
   let acts=`<a class="btn sm" href="${viewUrl(d.id)}">${mine?'✎ सम्पादन':'👁 हेर्नुहोस्'}</a>`;
+  if(!mine && ME) acts+=`<button class="btn sm" data-copy="${d.id}" title="सम्पादन गर्न आफ्नो खातामा प्रतिलिपि बनाउनुहोस्">📋 मेरोमा प्रतिलिपि</button>`;
   if(d.is_public||mine) acts+=`<button class="btn sm" data-share="${d.id}">🔗 सेयर</button>`;
   if(mine){
     acts+=`<button class="btn sm" data-toggle="${d.id}" data-pub="${d.is_public?1:0}">${d.is_public?'निजी बनाउनुहोस्':'सार्वजनिक गर्नुहोस्'}</button>`;
@@ -180,6 +181,14 @@ function wireCards(root){
   root.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
     if(!confirm('यो प्रस्तुति हटाउने?')) return;
     await api('DELETE','/api/decks/'+b.dataset.del); toast('हटाइयो'); loadMine(); loadPublic();
+  });
+  root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{
+    b.disabled=true;
+    try{
+      const d=await api('POST','/api/decks/'+b.dataset.copy+'/clone');
+      toast('✔ तपाईंको खातामा प्रतिलिपि बनाइयो');
+      location.href=viewUrl(d.id);
+    }catch(e){ toast('⚠ '+(e.message||'प्रतिलिपि हुन सकेन')); b.disabled=false; }
   });
 }
 async function newDeck(){

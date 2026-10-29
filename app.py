@@ -366,6 +366,27 @@ def api_create_deck():
     return jsonify(deck.summary(u.username)), 201
 
 
+@app.post("/api/decks/<int:did>/clone")
+def api_clone_deck(did):
+    """Copy a viewable deck (e.g. a public one) into the caller's account as a
+    new private deck they can edit. Slides are duplicated; images are shared by
+    reference (image serving is public, so the copy renders the same media)."""
+    u = require_login()
+    src = get_viewable_deck(did)
+    new = Deck(owner_id=u.id, is_public=False)
+    for f in META_FIELDS:
+        setattr(new, f, getattr(src, f))
+    new.title = (src.display_title() + " (प्रतिलिपि)").strip()
+    new.reportTitle = src.reportTitle or new.title
+    db.session.add(new)
+    db.session.flush()
+    for s in src.slides_ordered():
+        db.session.add(Slide(deck_id=new.id, position=s.position,
+                             type=s.type, title=s.title, content=s.content))
+    db.session.commit()
+    return jsonify(new.summary(u.username)), 201
+
+
 @app.get("/api/decks/<int:did>")
 def api_get_deck(did):
     deck = get_viewable_deck(did)
